@@ -24,7 +24,10 @@ from app.core.config import settings
 target_metadata = Base.metadata
 
 sync_url = settings.DATABASE_URL.replace("+asyncpg", "").replace("+aiosqlite", "")
+if sync_url.startswith("postgres://"):
+    sync_url = sync_url.replace("postgres://", "postgresql://", 1)
 config.set_main_option("sqlalchemy.url", sync_url)
+
 
 
 def run_migrations_offline() -> None:

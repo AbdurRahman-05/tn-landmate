@@ -9,10 +9,13 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: sh entrypoint.sh
     envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.3
       - key: ENVIRONMENT
         value: production
       - key: DEBUG
         value: false
+
       - key: SECRET_KEY
         generateValue: true
       - key: DATABASE_URL
