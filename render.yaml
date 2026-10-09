@@ -1,0 +1,29 @@
+services:
+  # FastAPI Backend Web Service
+  - type: web
+    name: tn-landmate-backend
+    env: python
+    region: singapore # Closest to India / Tamil Nadu
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: sh entrypoint.sh
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: DEBUG
+        value: false
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: tn-landmate-db
+          property: connectionString
+
+databases:
+  # Managed PostgreSQL Database
+  - name: tn-landmate-db
+    region: singapore
+    plan: free
+    databaseName: tn_landmate
+    user: landmate_admin
