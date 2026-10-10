@@ -194,3 +194,28 @@ async def test_geography_hierarchy(client):
     assert len(villages) >= 1
     assert any(v["name_en"] == "Ambattur" for v in villages)
 
+
+@pytest.mark.asyncio
+async def test_patta_generate_endpoint(client):
+    payload = {
+        "district_name": "Chennai",
+        "taluk_name": "Ambattur",
+        "village_name": "Ambattur",
+        "survey_number": "104",
+        "subdivision_number": "2B",
+        "patta_number": "1420",
+        "owner_name_en": "R. Selvam",
+        "owner_name_ta": "ஆர். செல்வம்",
+        "extent_cents": 5.51,
+        "land_type": "நன்செய் (Wet Land)"
+    }
+    res = await client.post("/api/v1/land/patta/generate", json=payload)
+    assert res.status_code == 200
+    data = res.json()
+    assert data["success"] is True
+    assert data["patta_number"] == "1420"
+    assert "TN-REV" in data["reference_id"]
+    assert data["extent_cents"] == 5.51
+    assert data["extent_sq_ft"] == 2400.16
+    assert "IT Act" in data["statutory_note"]
+

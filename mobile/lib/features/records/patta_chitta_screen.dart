@@ -7,6 +7,7 @@ import '../../shared/widgets/custom_app_bar.dart';
 import '../../shared/widgets/disclaimer_banner.dart';
 import '../../shared/widgets/official_source_card.dart';
 import '../../shared/widgets/live_gov_extractor_sheet.dart';
+import 'patta_generator_screen.dart';
 
 class PattaChittaScreen extends ConsumerWidget {
   const PattaChittaScreen({Key? key}) : super(key: key);
@@ -91,6 +92,28 @@ class PattaChittaScreen extends ConsumerWidget {
                             context: context,
                             recordType: 'patta_chitta',
                             title: lang == 'ta' ? 'நேரடி பட்டா / சிட்டா விவரம்' : 'Live Patta / Chitta Extraction',
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: AppColors.forestGreen, width: 1.5),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        icon: const Icon(Icons.picture_as_pdf, color: AppColors.forestGreen),
+                        label: Text(
+                          lang == 'ta' ? 'பட்டா நகல் பதிவிறக்கம் (Download PDF)' : 'Generate & Download Patta (PDF)',
+                          style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.forestGreen),
+                        ),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const PattaGeneratorScreen()),
                           );
                         },
                       ),

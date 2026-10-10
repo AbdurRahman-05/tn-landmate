@@ -6,6 +6,7 @@ import '../../core/providers.dart';
 import '../../shared/widgets/custom_app_bar.dart';
 import '../../shared/widgets/disclaimer_banner.dart';
 import 'add_edit_property_screen.dart';
+import '../../core/services/patta_pdf_service.dart';
 
 class SavedPropertiesScreen extends ConsumerWidget {
   const SavedPropertiesScreen({Key? key}) : super(key: key);
@@ -140,6 +141,31 @@ class SavedPropertiesScreen extends ConsumerWidget {
                               ),
                             ),
                           ],
+                          const SizedBox(height: 10),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: OutlinedButton.icon(
+                              style: OutlinedButton.styleFrom(
+                                side: const BorderSide(color: AppColors.forestGreen),
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              ),
+                              icon: const Icon(Icons.picture_as_pdf_outlined, size: 14, color: AppColors.forestGreen),
+                              label: const Text('Download Patta (PDF)', style: TextStyle(fontSize: 11, color: AppColors.forestGreen, fontWeight: FontWeight.bold)),
+                              onPressed: () {
+                                PattaPdfService.previewAndDownload(context, {
+                                  'patta_number': prop['patta_number'] ?? '1420',
+                                  'district_name': dist,
+                                  'taluk_name': prop['taluk_name'] ?? 'Ambattur',
+                                  'village_name': prop['village_name'] ?? 'Ambattur',
+                                  'survey_number': survey,
+                                  'subdivision_number': sub,
+                                  'owner_name_en': prop['owner_name_en'] ?? nickname,
+                                  'extent_cents': extent,
+                                });
+                              },
+                            ),
+                          ),
                         ],
                       ),
                     ),
