@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class LocalStorageService {
   static const String _keyLang = 'app_language';
   static const String _keyProperties = 'local_saved_properties';
+  static const String _keyServerUrl = 'custom_backend_url';
 
   static Future<String> getLanguage() async {
     final prefs = await SharedPreferences.getInstance();
@@ -13,6 +14,20 @@ class LocalStorageService {
   static Future<void> setLanguage(String code) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keyLang, code);
+  }
+
+  static Future<String?> getServerUrl() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_keyServerUrl);
+  }
+
+  static Future<void> setServerUrl(String? url) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (url == null || url.trim().isEmpty) {
+      await prefs.remove(_keyServerUrl);
+    } else {
+      await prefs.setString(_keyServerUrl, url.trim());
+    }
   }
 
   static Future<List<Map<String, dynamic>>> getSavedProperties() async {

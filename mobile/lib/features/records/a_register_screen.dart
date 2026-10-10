@@ -7,7 +7,6 @@ import '../../shared/widgets/custom_app_bar.dart';
 import '../../shared/widgets/disclaimer_banner.dart';
 import '../../shared/widgets/official_source_card.dart';
 import '../../shared/widgets/live_gov_extractor_sheet.dart';
-import '../live_portal/live_government_portal_screen.dart';
 
 class ARegisterScreen extends ConsumerWidget {
   const ARegisterScreen({Key? key}) : super(key: key);

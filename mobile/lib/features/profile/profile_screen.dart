@@ -2,14 +2,93 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/l10n/translations.dart';
+import '../../core/network/api_client.dart';
 import '../../core/providers.dart';
 import '../../shared/widgets/custom_app_bar.dart';
 
-class ProfileScreen extends ConsumerWidget {
+class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+  bool _testingServer = false;
+  String? _serverStatusMessage;
+  bool? _serverOnline;
+
+  Future<void> _checkServerConnection() async {
+    setState(() {
+      _testingServer = true;
+      _serverStatusMessage = 'Pinging cloud server (Render free tier wakes up in ~45s)...';
+      _serverOnline = null;
+    });
+
+    final res = await apiClient.checkHealth();
+    if (!mounted) return;
+
+    setState(() {
+      _testingServer = false;
+      _serverOnline = res['ok'] == true;
+      _serverStatusMessage = res['message'] ?? (res['ok'] == true ? 'Connected' : 'Unavailable');
+    });
+  }
+
+  void _showConfigureUrlDialog() {
+    final ctrl = TextEditingController(text: ApiClient.baseUrl);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Backend Server URL', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Specify custom API base URL (must include /api/v1):',
+              style: TextStyle(fontSize: 12, color: AppColors.charcoalLight),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: ctrl,
+              decoration: InputDecoration(
+                hintText: 'https://tn-landmate-backend.onrender.com/api/v1',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                isDense: true,
+              ),
+              style: const TextStyle(fontSize: 12),
+            ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: () {
+                ctrl.text = ApiClient.productionUrl;
+              },
+              child: const Text('Reset to Default Render URL', style: TextStyle(fontSize: 11)),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            child: const Text('Cancel'),
+            onPressed: () => Navigator.pop(ctx),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.forestGreen),
+            child: const Text('Save & Test'),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await apiClient.setBaseUrl(ctrl.text.trim());
+              _checkServerConnection();
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final lang = ref.watch(languageProvider);
 
     return Scaffold(
@@ -48,7 +127,7 @@ class ProfileScreen extends ConsumerWidget {
                               color: AppColors.forestGreen.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(4),
                             ),
-                            child: const Text('Offline Local Mode Active', style: TextStyle(fontSize: 10, color: AppColors.forestGreen, fontWeight: FontWeight.bold)),
+                            child: const Text('Tamil Nadu LandMate Citizen', style: TextStyle(fontSize: 10, color: AppColors.forestGreen, fontWeight: FontWeight.bold)),
                           ),
                         ],
                       ),
@@ -79,6 +158,144 @@ class ProfileScreen extends ConsumerWidget {
                     ),
                   ),
                 ],
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Cloud Server Connection & Status Card
+            Card(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.cloud_sync_outlined, color: AppColors.forestGreen),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            lang == 'ta' ? 'கிளவுட் சர்வர் & இணைப்பு நிலை' : 'Backend Cloud Server & Health',
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                          ),
+                        ),
+                        if (_serverOnline != null)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: _serverOnline == true ? AppColors.success.withOpacity(0.15) : AppColors.error.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  _serverOnline == true ? Icons.check_circle : Icons.error_outline,
+                                  size: 12,
+                                  color: _serverOnline == true ? AppColors.success : AppColors.error,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  _serverOnline == true ? 'Online' : 'Offline / Idle',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: _serverOnline == true ? AppColors.success : AppColors.error,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('Target Base URL:', style: TextStyle(fontSize: 10, color: AppColors.charcoalLight)),
+                                const SizedBox(height: 2),
+                                SelectableText(
+                                  ApiClient.baseUrl,
+                                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.charcoal),
+                                ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.edit_outlined, size: 18, color: AppColors.forestGreen),
+                            tooltip: 'Configure URL',
+                            onPressed: _showConfigureUrlDialog,
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (_serverStatusMessage != null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        _serverStatusMessage!,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: _serverOnline == true ? AppColors.success : AppColors.charcoalLight,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 8),
+                    // Notice on Render free tier
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade50,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(Icons.info_outline, size: 14, color: Colors.blue.shade800),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              lang == 'ta'
+                                  ? 'Render இலவச கிளவுட் தளம் 15 நிமிட செயலற்ற நிலைக்குப் பிறகு உறங்குகிறது (Cold-Start). முதல் கோரிக்கைக்கு விழித்துக் கொள்ள ~45-50 வினாடிகள் ஆகும்.'
+                                  : 'Render Free Tier sleeps after 15 min of inactivity. First request takes ~45s to wake up container. The app automatically retries.',
+                              style: TextStyle(fontSize: 10, color: Colors.blue.shade900, height: 1.3),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: AppColors.forestGreen),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                        icon: _testingServer
+                            ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
+                            : const Icon(Icons.power_settings_new, size: 16, color: AppColors.forestGreen),
+                        label: Text(
+                          _testingServer ? 'Waking Up Server...' : 'Test / Wake Up Server Now',
+                          style: const TextStyle(fontSize: 12, color: AppColors.forestGreen, fontWeight: FontWeight.bold),
+                        ),
+                        onPressed: _testingServer ? null : _checkServerConnection,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
 
