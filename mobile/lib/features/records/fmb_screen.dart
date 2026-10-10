@@ -7,7 +7,6 @@ import '../../shared/widgets/custom_app_bar.dart';
 import '../../shared/widgets/disclaimer_banner.dart';
 import '../../shared/widgets/official_source_card.dart';
 import '../../shared/widgets/live_gov_extractor_sheet.dart';
-import '../documents/pdf_document_center_screen.dart';
 
 class FmbScreen extends ConsumerStatefulWidget {
   const FmbScreen({Key? key}) : super(key: key);
@@ -160,30 +159,6 @@ class _FmbScreenState extends ConsumerState<FmbScreen> {
                     context: context,
                     recordType: 'fmb',
                     title: lang == 'ta' ? 'புல வரைபடம் நேரடி விவரம்' : 'Live FMB Sketch Extraction',
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 10),
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: OutlinedButton.icon(
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: AppColors.forestGreen, width: 1.5),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                icon: const Icon(Icons.picture_as_pdf, color: AppColors.forestGreen),
-                label: Text(
-                  lang == 'ta' ? 'புல வரைபடம் பதிவிறக்கம் (PDF)' : 'Generate & Download FMB Sketch (PDF)',
-                  style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.forestGreen),
-                ),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const PdfDocumentCenterScreen(initialDocType: 'fmb'),
-                    ),
                   );
                 },
               ),

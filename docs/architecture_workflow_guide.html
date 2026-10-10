@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TN LandMate - Full PDF Architecture & Workflow Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  @page {
+    size: A4 portrait;
+    margin: 12mm;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', sans-serif;
+    color: #1f2937;
+    background: #fff;
+    padding: 12px;
+    font-size: 11px;
+    line-height: 1.5;
+  }
+  .doc-header {
+    border-bottom: 3px solid #1b4332;
+    padding-bottom: 12px;
+    margin-bottom: 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+  .doc-title h1 {
+    font-size: 20px;
+    font-weight: 800;
+    color: #1b4332;
+    margin-bottom: 4px;
+  }
+  .doc-title p {
+    font-size: 12px;
+    color: #4b5563;
+    font-weight: 500;
+  }
+  .doc-badge {
+    background: #ecfdf5;
+    border: 1px solid #10b981;
+    color: #065f46;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 10px;
+  }
+  .intro-box {
+    background: #f8fafc;
+    border-left: 4px solid #0284c7;
+    padding: 12px 16px;
+    border-radius: 0 8px 8px 0;
+    margin-bottom: 20px;
+    font-size: 11.5px;
+  }
+  .intro-box p {
+    color: #1e293b;
+    margin-bottom: 6px;
+  }
+  .intro-box p:last-child { margin-bottom: 0; }
+  .section-h2 {
+    font-size: 14px;
+    font-weight: 800;
+    color: #1b4332;
+    margin: 22px 0 10px 0;
+    border-bottom: 1.5px solid #e5e7eb;
+    padding-bottom: 4px;
+  }
+  .flow-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .flow-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .step-num {
+    background: #1b4332;
+    color: #fff;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 700;
+    margin-right: 8px;
+  }
+  .flow-header h3 {
+    font-size: 12px;
+    font-weight: 700;
+    color: #111827;
+  }
+  .flow-badge {
+    margin-left: auto;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+  .badge-offline { background: #dcfce7; color: #15803d; }
+  .badge-online { background: #dbeafe; color: #1e40af; }
+  .badge-engine { background: #fef3c7; color: #92400e; }
+  
+  .tanglish-desc {
+    background: #fdfdfd;
+    border-left: 3px solid #10b981;
+    padding: 8px 12px;
+    margin: 6px 0;
+    font-size: 10.5px;
+    color: #1f2937;
+    border-radius: 0 4px 4px 0;
+  }
+  .tech-detail {
+    font-size: 9.5px;
+    color: #4b5563;
+    margin-top: 4px;
+  }
+  code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    background: #f3f4f6;
+    padding: 1px 4px;
+    border-radius: 3px;
+    color: #0f766e;
+  }
+  table.summary-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 14px;
+    font-size: 10px;
+  }
+  table.summary-table th {
+    background: #1b4332;
+    color: #fff;
+    padding: 8px;
+    text-align: left;
+    font-size: 9.5px;
+  }
+  table.summary-table td {
+    padding: 7px 8px;
+    border: 1px solid #e5e7eb;
+    color: #374151;
+  }
+  .page-break {
+    page-break-before: always;
+  }
+  .arch-diagram-box {
+    background: #0f172a;
+    color: #e2e8f0;
+    padding: 16px;
+    border-radius: 8px;
+    margin: 14px 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    line-height: 1.4;
+  }
+</style>
+</head>
+<body>
+
+<div class="doc-header">
+  <div class="doc-title">
+    <h1>TN LandMate: PDF Architecture & Workflow Working Flow</h1>
+    <p>Complete End-to-End System Design & Operation Guide (In Tanglish)</p>
+  </div>
+  <div class="doc-badge">v1.0.0 Production</div>
+</div>
+
+<div class="intro-box">
+  <p><strong>Vanakkam!</strong> Namma <strong>TN LandMate</strong> app-la PDF generation, live scraper bridge, math calculations, and offline storage epdi synchronize aaguthu nu indha document-la detailed-ah step-by-step explain pannirukom.</p>
+  <p>Indha system <strong>5 Core Architectural Layers</strong>-la build aagirukku: Offline Geography, Live Govt Bridge, Math Normalization, Vector PDF Engine, and Native Device Spooler.</p>
+</div>
+
+<div class="section-h2">1. Visual Architecture Blueprint (Architecture Flow)</div>
+<div class="arch-diagram-box">
+[1. User Input Form]
+       |
+       +---> [Local Geography DB: 38 Districts, 317 Taluks, 18,606 Villages] (100% Offline)
+       |
+       +---> (Optional) [Live Govt Bridge -> FastAPI Backend -> eservices.tn.gov.in]
+                   |
+                   +--> Live CAPTCHA solved in Native Mobile BottomSheet
+                   +--> Extracted Official Records (Owner Name, Survey, Land Class)
+       |
+[2. Data Normalization & Math Engine]
+       |
+       +---> Converts Extent: Cents -> Sq.Ft (x435.6) -> Hectares -> Ares
+       +---> Generates Unique Reference Ref: TN-REV-2026-XXXXXX
+       +---> Calculates Stamp Duty & Registration Tax Assessment
+       |
+[3. Client-Side PDF Engine (PattaPdfService)]
+       |
+       +---> Builds A4 Vector Canvas (Header, Bilingual Tables, Statutory Footer)
+       +---> Embeds Live Vector QR Code targeting eservices.tn.gov.in validation
+       +---> Section 65B Indian Evidence Act / IT Act 2000 Legal Validity Stamp
+       |
+[4. Native Mobile Device Actions (PattaPreviewScreen)]
+       |
+       +---> Save as PDF into phone's Downloads directory
+       +---> Direct Share via WhatsApp, Gmail, Telegram
+       +---> Direct Print to WiFi / Bluetooth Network Printers
+</div>
+
+<div class="section-h2">2. The 5 Core Layers Deep-Dive (In Tanglish)</div>
+
+<div class="flow-card">
+  <div class="flow-header">
+    <span class="step-num">1</span>
+    <h3>Layer 1: Zero-Latency Offline Geography Engine</h3>
+    <span class="flow-badge badge-offline">100% Offline</span>
+  </div>
+  <div class="tanglish-desc">
+    <strong>Enna Nadakuthu?</strong> User app open panni District, Taluk, Revenue Village select pannum pothu internet connection thevaiye illa! Tamil Nadu-oda 38 Districts, 317 Taluks, and 18,606 Villages mobile memory kulla embed aagi irukku.
+  </div>
+  <div class="tech-detail">
+    <strong>Technical Source:</strong> <code>mobile/lib/core/data/tn_geography_data.dart</code>. Instant binary lookup with zero network lag.
+  </div>
+</div>
+
+<div class="flow-card">
+  <div class="flow-header">
+    <span class="step-num">2</span>
+    <h3>Layer 2: Live Government Portal Scraper Bridge</h3>
+    <span class="flow-badge badge-online">Cloud + Govt Live</span>
+  </div>
+  <div class="tanglish-desc">
+    <strong>Enna Nadakuthu?</strong> User "Extract Live Patta/Chitta" click panna, namma Render backend direct-ah <code>eservices.tn.gov.in</code> kooda connect aagi, live session create panni, CAPTCHA image-ah phone screen-la kaatum. User solve panna udane official Tamil Nadu server data retrieve aagi varum.
+  </div>
+  <div class="tech-detail">
+    <strong>Technical Source:</strong> <code>backend/app/services/live_scraper_service.py</code> & <code>mobile/lib/shared/widgets/live_gov_extractor_sheet.dart</code>. 60s cold-start timeout tolerance.
+  </div>
+</div>
+
+<div class="flow-card">
+  <div class="flow-header">
+    <span class="step-num">3</span>
+    <h3>Layer 3: Math & Normalization Engine</h3>
+    <span class="flow-badge badge-engine">Client & Server</span>
+  </div>
+  <div class="tanglish-desc">
+    <strong>Enna Nadakuthu?</strong> Raw land extent-ah 4 standard revenue units-ku automatically convert pannum: Cents, Square Feet, Hectares, and Ares. Unique timestamped reference ID generate aagi certificate seal create aagum.
+  </div>
+  <div class="tech-detail">
+    <strong>Formula:</strong> <code>Sq.Ft = Cents * 435.6</code> | <code>Hectares = Cents * 0.00404686</code> | Reference: <code>TN-REV-YYYY-XXXXXX</code>.
+  </div>
+</div>
+
+<div class="flow-card">
+  <div class="flow-header">
+    <span class="step-num">4</span>
+    <h3>Layer 4: Vector PDF Generation Engine (PattaPdfService)</h3>
+    <span class="flow-badge badge-offline">100% Client-Side Offline</span>
+  </div>
+  <div class="tanglish-desc">
+    <strong>Enna Nadakuthu?</strong> Server illamalaye mobile phone-oda RAM-la official Tamil Nadu Revenue Department A4 certificate format-la pixel-perfect PDF build aagum. Vector QR code, bilingual tables, and IT Act Section 65B legal validity stamp embed aagidum.
+  </div>
+  <div class="tech-detail">
+    <strong>Technical Source:</strong> <code>mobile/lib/core/services/patta_pdf_service.dart</code> using Dart <code>pdf</code> & <code>printing</code> libraries.
+  </div>
+</div>
+
+<div class="flow-card">
+  <div class="flow-header">
+    <span class="step-num">5</span>
+    <h3>Layer 5: Native Device Integration (Preview, Save & Share)</h3>
+    <span class="flow-badge badge-offline">Native Android/iOS</span>
+  </div>
+  <div class="tanglish-desc">
+    <strong>Enna Nadakuthu?</strong> Generated PDF-ah user phone-la zoom panni paakalaam, 1-tap panni phone-oda Downloads folder-la save pannalaam, WhatsApp-la clients-ku share pannalaam, illana Bluetooth/WiFi printer vazhiya print edukalaam!
+  </div>
+  <div class="tech-detail">
+    <strong>Technical Source:</strong> <code>mobile/lib/features/records/patta_preview_screen.dart</code>. Uses Native Android Print Spooler and Intent Share Sheet.
+  </div>
+</div>
+
+<div class="section-h2">3. End-to-End Real World Citizen Journey (Tanglish)</div>
+<div class="tanglish-desc" style="line-height:1.6;">
+  <strong>Scenario:</strong> Oru real estate buyer illana land owner Ambattur Survey No 104/2B-ku Patta copy edukka virumburaanga:<br>
+  1. <strong>Open App:</strong> Home screen-la <em>"Download Patta PDF"</em> button tap panraanga.<br>
+  2. <strong>Instant Select:</strong> District: <em>Chennai</em>, Taluk: <em>Ambattur</em>, Village: <em>Ambattur</em> select panraanga (offline-la instant-ah load aagum).<br>
+  3. <strong>Data Input:</strong> Survey No <em>104</em>, Subdiv <em>2B</em>, Patta No <em>1420</em>, Owner <em>R. Selvam</em> kudukuraanga.<br>
+  4. <strong>1-Tap Generate:</strong> <em>"Download Generated Patta (PDF)"</em> tap panna udane microsecond-la official A4 PDF certificate generate aagi screen-la open aagidum.<br>
+  5. <strong>Download / Share:</strong> Top right download/share button thatti WhatsApp-la bank loan officer-ko buyer-ko instant-ah send panraanga!
+</div>
+
+<div class="section-h2">4. Architecture Summary Table</div>
+<table class="summary-table">
+  <thead>
+    <tr>
+      <th>Module</th>
+      <th>Key Responsibility</th>
+      <th>Offline Capable?</th>
+      <th>Primary File</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Geography DB</strong></td>
+      <td>38 Districts, 317 Taluks, 18,606 Revenue Villages</td>
+      <td>Yes (100%)</td>
+      <td><code>tn_geography_data.dart</code></td>
+    </tr>
+    <tr>
+      <td><strong>Live Govt Bridge</strong></td>
+      <td>Connects to eservices.tn.gov.in & extracts live records</td>
+      <td>Requires Internet</td>
+      <td><code>live_scraper_service.py</code></td>
+    </tr>
+    <tr>
+      <td><strong>PDF Generator Engine</strong></td>
+      <td>Builds official A4 Patta with QR Code & IT Act seal</td>
+      <td>Yes (100%)</td>
+      <td><code>patta_pdf_service.dart</code></td>
+    </tr>
+    <tr>
+      <td><strong>Preview & Spooler</strong></td>
+      <td>Interactive zoom, storage download, WhatsApp share, print</td>
+      <td>Yes (100%)</td>
+      <td><code>patta_preview_screen.dart</code></td>
+    </tr>
+    <tr>
+      <td><strong>Cloud Backend API</strong></td>
+      <td>Cloud metadata validation, guideline values & health</td>
+      <td>Requires Internet</td>
+      <td><code>land.py</code></td>
+    </tr>
+  </tbody>
+</table>
+
+</body>
+</html>

@@ -117,7 +117,7 @@ class PattaPdfService {
                       borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
                     ),
                     child: pw.Text(
-                      'PATTA / CHITTA EXTRACT (பட்டா / சிட்டா சான்றளிக்கப்பட்ட நகல்)',
+                      'PATTA / CHITTA EXTRACT (CERTIFIED LAND REVENUE COPY)',
                       style: pw.TextStyle(
                         fontSize: 10.5,
                         fontWeight: pw.FontWeight.bold,
@@ -142,27 +142,27 @@ class PattaPdfService {
                 pw.SizedBox(height: 6),
 
                 // Section 1: Administrative Jurisdiction
-                pw.Text('1. REVENUE JURISDICTION / வருவாய் நிர்வாக எல்லை விவரங்கள்',
+                pw.Text('1. REVENUE JURISDICTION (VAZHAVU & NIRVAGAM)',
                     style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: forestGreen)),
                 pw.SizedBox(height: 6),
                 _buildPdfGridTable([
-                  ['District (மாவட்டம்)', districtName, 'Taluk (வட்டம்)', talukName],
-                  ['Revenue Village (வருவாய் கிராமம்)', villageName, 'Patta Number (பட்டா எண்)', pattaNo],
+                  ['District (Maavattam)', districtName, 'Taluk (Vattam)', talukName],
+                  ['Revenue Village (Kiraamam)', villageName, 'Patta Number (Patta Enn)', pattaNo],
                 ], borderGrey),
                 pw.SizedBox(height: 10),
 
                 // Section 2: Patta Holder Details
-                pw.Text('2. PATTA HOLDER PARTICULARS / பட்டாதாரர் விவரங்கள்',
+                pw.Text('2. PATTA HOLDER PARTICULARS (PATTADHARAR VIVARAM)',
                     style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: forestGreen)),
                 pw.SizedBox(height: 6),
                 _buildPdfGridTable([
-                  ['Owner Name (English)', ownerNameEn, 'Owner Name (Tamil)', ownerNameTa],
-                  ['Father / Husband Name', fatherName, 'Registration Status', 'ACTIVE TITLE HOLDER (உரிமையாளர்)'],
+                  ['Owner Name (Registered)', ownerNameEn, 'Title Status', 'ACTIVE TITLE HOLDER (URIMAIYALUR)'],
+                  ['Father / Husband Name', fatherName, 'Registration Type', 'REVENUE PATTA REGISTER'],
                 ], borderGrey),
                 pw.SizedBox(height: 10),
 
                 // Section 3: Land Schedule Details Table
-                pw.Text('3. LAND PARCEL SCHEDULE / புல விவரங்கள் & பரப்பளவு',
+                pw.Text('3. LAND PARCEL SCHEDULE (PULA VIVARAM & EXTENT)',
                     style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: forestGreen)),
                 pw.SizedBox(height: 6),
                 pw.Table(
@@ -248,9 +248,8 @@ class PattaPdfService {
                   children: [
                     pw.Expanded(
                       child: pw.Text(
-                        'This is a digitally generated extract issued under Section 65B of Indian Evidence Act / IT Act 2000. '
-                        'No physical signature required.\n'
-                        'இக்குறிப்பு கணினி மூலம் பெறப்பட்டது. இதற்கு கையொப்பம் தேவையில்லை. (eservices.tn.gov.in)',
+                        'This is a digitally generated extract issued under Section 65B of Indian Evidence Act / IT Act 2000.\n'
+                        'Official verification available at eservices.tn.gov.in. No physical signature required.',
                         style: const pw.TextStyle(fontSize: 6.5, color: PdfColors.grey600),
                       ),
                     ),
