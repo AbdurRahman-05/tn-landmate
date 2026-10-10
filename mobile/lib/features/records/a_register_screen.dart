@@ -7,6 +7,7 @@ import '../../shared/widgets/custom_app_bar.dart';
 import '../../shared/widgets/disclaimer_banner.dart';
 import '../../shared/widgets/official_source_card.dart';
 import '../../shared/widgets/live_gov_extractor_sheet.dart';
+import '../documents/pdf_document_center_screen.dart';
 
 class ARegisterScreen extends ConsumerWidget {
   const ARegisterScreen({Key? key}) : super(key: key);
@@ -81,6 +82,30 @@ class ARegisterScreen extends ConsumerWidget {
                             context: context,
                             recordType: 'a_register',
                             title: lang == 'ta' ? 'அ-பதிவேடு நேரடி விவரம்' : 'Live A-Register Extraction',
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Color(0xFF2563EB), width: 1.5),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        icon: const Icon(Icons.picture_as_pdf, color: Color(0xFF2563EB)),
+                        label: Text(
+                          lang == 'ta' ? 'அ-பதிவேடு நகல் பதிவிறக்கம் (PDF)' : 'Generate & Download A-Register (PDF)',
+                          style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF2563EB)),
+                        ),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const PdfDocumentCenterScreen(initialDocType: 'a_register'),
+                            ),
                           );
                         },
                       ),

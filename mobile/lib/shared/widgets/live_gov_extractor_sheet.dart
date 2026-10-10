@@ -5,7 +5,7 @@ import '../../core/data/tn_geography_data.dart';
 import '../../core/network/api_client.dart';
 import '../../features/calculators/registration_calculator_screen.dart';
 import '../../features/live_portal/live_government_portal_screen.dart';
-import '../../core/services/patta_pdf_service.dart';
+import '../../core/services/document_pdf_service.dart';
 
 class LiveGovExtractorSheet extends StatefulWidget {
   final String recordType; // 'patta_chitta', 'a_register', 'fmb', 'guideline_value'
@@ -737,19 +737,37 @@ class _LiveGovExtractorSheetState extends State<LiveGovExtractorSheet> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
               icon: const Icon(Icons.picture_as_pdf, color: AppColors.mutedGold, size: 18),
-              label: const Text(
-                'Download Generated Patta (PDF)',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
+              label: Text(
+                isAreg
+                    ? 'Download A-Register (PDF)'
+                    : isFmb
+                        ? 'Download FMB Cadastral Sketch (PDF)'
+                        : isGuideline
+                            ? 'Download Valuation Certificate (PDF)'
+                            : 'Download Generated Patta (PDF)',
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
               ),
               onPressed: () {
-                PattaPdfService.previewAndDownload(context, {
-                  ...rec,
-                  'district_name': _getDistrictName(),
-                  'taluk_name': _getTalukName(),
-                  'village_name': _getVillageName(),
-                  'survey_number': _surveyCtrl.text,
-                  'subdivision_number': _subdivCtrl.text,
-                });
+                final normalizedType = isAreg
+                    ? 'a_register'
+                    : isFmb
+                        ? 'fmb'
+                        : isGuideline
+                            ? 'registration_valuation'
+                            : 'patta_chitta';
+
+                DocumentPdfService.previewAndDownload(
+                  context: context,
+                  docType: normalizedType,
+                  data: {
+                    ...rec,
+                    'district_name': _getDistrictName(),
+                    'taluk_name': _getTalukName(),
+                    'village_name': _getVillageName(),
+                    'survey_number': _surveyCtrl.text,
+                    'subdivision_number': _subdivCtrl.text,
+                  },
+                );
               },
             ),
           ),

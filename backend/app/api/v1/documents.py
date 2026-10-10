@@ -42,3 +42,75 @@ async def upload_document(file: UploadFile = File(...)):
         "status": "uploaded_securely",
         "message": "File received in memory sandbox for temporary analysis"
     }
+
+
+@router.post("/export-pdf")
+async def export_revenue_document_pdf(payload: dict):
+    """
+    Generate and stream a production-ready Tamil Nadu Revenue or Registration A4 PDF document.
+    Supported doc_types: 'patta_chitta', 'a_register', 'fmb', 'registration_valuation', 'due_diligence'
+    """
+    from fastapi.responses import Response
+    from app.services.pdf_generator_service import BackendPdfGeneratorService
+
+    doc_type = payload.get("doc_type", "patta_chitta")
+    survey = payload.get("survey_number", "104")
+    subdiv = payload.get("subdivision_number", "2B")
+    filename = f"TN_{doc_type.upper()}_Survey_{survey}_{subdiv}.pdf"
+
+    pdf_bytes = BackendPdfGeneratorService.generate_pdf(doc_type, payload)
+
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "X-Document-Type": doc_type,
+        },
+    )
+
+
+@router.get("/types")
+async def list_available_document_types():
+    """
+    Return all official Tamil Nadu document templates supported by the PDF generation engine.
+    """
+    return {
+        "types": [
+            {
+                "id": "patta_chitta",
+                "name_en": "Patta / Chitta Extract",
+                "name_ta": "பட்டா / சிட்டா நகல்",
+                "authority": "Commissionerate of Land Administration",
+                "portal": "eservices.tn.gov.in"
+            },
+            {
+                "id": "a_register",
+                "name_en": "Village A-Register Permanent Record",
+                "name_ta": "அ-பதிவேடு நிரந்தர நில ஆவணம்",
+                "authority": "Village Administrative Office (VAO)",
+                "portal": "eservices.tn.gov.in"
+            },
+            {
+                "id": "fmb",
+                "name_en": "Field Measurement Book (FMB) Cadastral Report",
+                "name_ta": "புல வரைபடம் (FMB) ஏணி அளவீட்டு அறிக்கை",
+                "authority": "Directorate of Survey and Settlement",
+                "portal": "eservices.tn.gov.in"
+            },
+            {
+                "id": "registration_valuation",
+                "name_en": "Stamp Duty & Registration Valuation Certificate",
+                "name_ta": "முத்திரைத்தாள் & பதிவுக் கட்டண மதிப்பீட்டு சான்றிதழ்",
+                "authority": "Registration Department (IGRS Tamil Nadu)",
+                "portal": "tnreginet.gov.in"
+            },
+            {
+                "id": "due_diligence",
+                "name_en": "Comprehensive Land Due Diligence & Legal Title Dossier",
+                "name_ta": "நில சரிபார்ப்பு முழு தணிக்கை அறிக்கை",
+                "authority": "TN LandMate Certified Legal Engine",
+                "portal": "tn-landmate"
+            }
+        ]
+    }

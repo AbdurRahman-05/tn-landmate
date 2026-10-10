@@ -15,6 +15,7 @@ import '../records/a_register_screen.dart';
 import '../records/fmb_screen.dart';
 import '../guideline/guideline_value_screen.dart';
 import '../documents/document_guide_list_screen.dart';
+import '../documents/pdf_document_center_screen.dart';
 import '../ai_assistant/ai_assistant_screen.dart';
 import '../properties/saved_properties_screen.dart';
 import '../live_portal/live_government_portal_screen.dart';
@@ -328,6 +329,72 @@ class HomeScreen extends ConsumerWidget {
                       );
                     }).toList(),
                 ],
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // Official Revenue Document Center & PDF Hub Banner
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: InkWell(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const PdfDocumentCenterScreen()),
+                ),
+                borderRadius: BorderRadius.circular(14),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF1B4332), Color(0xFF2D6A4F)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.08),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      )
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.picture_as_pdf, color: AppColors.mutedGold, size: 28),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              lang == 'ta'
+                                  ? 'அதிகாரப்பூர்வ ஆவண மையம் & PDF பதிவிறக்கம்'
+                                  : 'Official Document Center & PDF Hub',
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              lang == 'ta'
+                                  ? 'பட்டா, அ-பதிவேடு, FMB, கட்டண மதிப்பீடு - உடனடி A4 PDF'
+                                  : 'Patta, A-Register, FMB, Valuation - Certified A4 Downloads',
+                              style: const TextStyle(fontSize: 11, color: Color(0xFFD1E7DD)),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.white),
+                    ],
+                  ),
+                ),
               ),
             ),
 

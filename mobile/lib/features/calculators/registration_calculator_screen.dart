@@ -6,6 +6,7 @@ import '../../core/l10n/translations.dart';
 import '../../core/providers.dart';
 import '../../shared/widgets/custom_app_bar.dart';
 import '../../shared/widgets/disclaimer_banner.dart';
+import '../../core/services/document_pdf_service.dart';
 
 class RegistrationCalculatorScreen extends ConsumerStatefulWidget {
   const RegistrationCalculatorScreen({Key? key}) : super(key: key);
@@ -231,6 +232,51 @@ class _RegistrationCalculatorScreenState extends ConsumerState<RegistrationCalcu
                           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: AppColors.forestGreenDark),
                         ),
                       ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.forestGreen,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      icon: const Icon(Icons.picture_as_pdf, color: AppColors.mutedGold),
+                      label: Text(
+                        lang == 'ta'
+                            ? 'கட்டண மதிப்பீட்டு சான்றிதழ் பெறுக (PDF)'
+                            : 'Export Valuation Certificate (PDF)',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                      ),
+                      onPressed: () {
+                        final valData = {
+                          'district_name': 'Chennai',
+                          'taluk_name': 'Ambattur',
+                          'village_name': 'Ambattur',
+                          'survey_number': '104',
+                          'subdivision_number': '2B',
+                          'patta_number': '1420',
+                          'owner_name_en': 'Property Valuator Extract',
+                          'owner_name_ta': 'சொத்து மதிப்பீடு சான்று',
+                          'market_value': val.toStringAsFixed(0),
+                          'stamp_duty_amount': stampAmt.toStringAsFixed(0),
+                          'registration_fee_amount': regAmt.toStringAsFixed(0),
+                          'stamp_duty_rate': '$_stampRate%',
+                          'reg_fee_rate': '$_regRate%',
+                          'fixed_cess': 'Rs. 100',
+                          'total_govt_charges': totalGovt.toStringAsFixed(0),
+                          'total_property_cost': totalCost.toStringAsFixed(0),
+                          'transaction_type': _transactionType,
+                          'classification': 'ரயத்துவாரி மனை (Residential / Commercial Plot)',
+                        };
+                        DocumentPdfService.previewAndDownload(
+                          context: context,
+                          docType: 'registration_valuation',
+                          data: valData,
+                        );
+                      },
                     ),
                   ),
                 ],
