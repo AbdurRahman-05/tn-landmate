@@ -1,4 +1,6 @@
 import datetime
+import json
+from pathlib import Path
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.models import (
@@ -8,86 +10,71 @@ from app.models import (
 from app.core.security import get_password_hash
 
 async def seed_initial_data(session: AsyncSession):
-    # 1. Seed Districts if empty
-    dist_check = await session.execute(select(District).limit(1))
-    if not dist_check.scalars().first():
+    # 1. Seed Districts, Taluks, and Revenue Villages
+    json_path = Path(__file__).parent / "tn_geography_full.json"
+    if json_path.exists():
+        with open(json_path, "r", encoding="utf-8") as f:
+            geo_data = json.load(f)
+
+        # Seed Districts (all 38)
+        existing_d_ids = set((await session.execute(select(District.id))).scalars().all())
+        for d in geo_data["districts"]:
+            if d["id"] not in existing_d_ids:
+                session.add(District(id=d["id"], code=d["code"], name_en=d["name_en"], name_ta=d["name_ta"]))
+        await session.flush()
+
+        # Seed Taluks (all 317)
+        existing_t_ids = set((await session.execute(select(Taluk.id))).scalars().all())
+        for dist_id_str, taluk_list in geo_data["taluks"].items():
+            for t in taluk_list:
+                if t["id"] not in existing_t_ids:
+                    session.add(Taluk(id=t["id"], district_id=t["district_id"], code=t["code"], name_en=t["name_en"], name_ta=t["name_ta"]))
+        await session.flush()
+
+        # Seed Villages (all 18,606 in batches)
+        existing_v_ids = set((await session.execute(select(RevenueVillage.id))).scalars().all())
+        village_objs = []
+        for taluk_id_str, v_list in geo_data["villages"].items():
+            for v in v_list:
+                if v["id"] not in existing_v_ids:
+                    village_objs.append(
+                        RevenueVillage(id=v["id"], taluk_id=v["taluk_id"], code=v["code"], name_en=v["name_en"], name_ta=v["name_ta"])
+                    )
+
+        batch_size = 2000
+        for i in range(0, len(village_objs), batch_size):
+            session.add_all(village_objs[i:i + batch_size])
+            await session.flush()
+        await session.commit()
+    else:
+        # Fallback minimum dataset if json not found
         tn_districts = [
             (1, "CHN", "Chennai", "சென்னை"),
             (2, "CBE", "Coimbatore", "கோயம்புத்தூர்"),
             (3, "MDU", "Madurai", "மதுரை"),
             (4, "TRY", "Tiruchirappalli", "திருச்சிராப்பள்ளி"),
             (5, "CGL", "Chengalpattu", "செங்கல்பட்டு"),
-            (6, "KCH", "Kancheepuram", "காஞ்சிபுரம்"),
-            (7, "SLM", "Salem", "சேலம்"),
-            (8, "TPR", "Tiruppur", "திருப்பூர்"),
-            (9, "ERD", "Erode", "ஈரோடு"),
-            (10, "VLR", "Vellore", "வேலூர்"),
-            (11, "TNV", "Tirunelveli", "திருநெல்வேலி"),
-            (12, "TTK", "Thoothukudi", "தூத்துக்குடி"),
-            (13, "KKI", "Kanniyakumari", "கன்னியாகுமரி"),
-            (14, "TNJ", "Thanjavur", "தஞ்சாவூர்"),
-            (15, "DGL", "Dindigul", "திண்டுக்கல்"),
-            (16, "TVR", "Tiruvarur", "திருவாரூர்"),
-            (17, "NGP", "Nagapattinam", "நாகப்பட்டினம்"),
-            (18, "CDL", "Cuddalore", "கடலூர்"),
-            (19, "VPM", "Viluppuram", "விழுப்புரம்"),
-            (20, "TVM", "Tiruvannamalai", "திருவண்ணாமலை"),
-            (21, "TLR", "Tiruvallur", "திருவள்ளூர்"),
-            (22, "NMK", "Namakkal", "நாமக்கல்"),
-            (23, "KRR", "Karur", "கரூர்"),
-            (24, "DPG", "Dharmapuri", "தர்மபுரி"),
-            (25, "KRI", "Krishnagiri", "கிருஷ்ணகிரி"),
-            (26, "RPT", "Ranipet", "ராணிப்பேட்டை"),
-            (27, "TPT", "Tirupathur", "திருப்பத்தூர்"),
-            (28, "KLK", "Kallakurichi", "கள்ளக்குறிச்சி"),
-            (29, "TEN", "Tenkasi", "தென்காசி"),
-            (30, "MYL", "Mayiladuthurai", "மயிலாடுதுறை"),
-            (31, "PDK", "Pudukkottai", "புதுக்கோட்டை"),
-            (32, "SVG", "Sivaganga", "சிவகங்கை"),
-            (33, "RMD", "Ramanathapuram", "ராமநாதபுரம்"),
-            (34, "VRD", "Virudhunagar", "விருதுநகர்"),
-            (35, "TNI", "Theni", "தேனி"),
-            (36, "NLG", "Nilgiris", "நீலகிரி"),
-            (37, "PBL", "Perambalur", "பெரம்பலூர்"),
-            (38, "AYR", "Ariyalur", "அரியலூர்"),
         ]
         for d_id, code, name_en, name_ta in tn_districts:
             session.add(District(id=d_id, code=code, name_en=name_en, name_ta=name_ta))
         await session.commit()
 
-        # Seed Taluks for sample key districts
         taluks = [
-            # Chennai
             (1, 1, "AMB", "Ambattur", "அம்பத்தூர்"),
             (2, 1, "MYL", "Mylapore", "மயிலாப்பூர்"),
             (3, 1, "VEL", "Velachery", "வேளச்சேரி"),
             (4, 1, "GND", "Guindy", "கிண்டி"),
-            # Coimbatore
-            (5, 2, "CBN", "Coimbatore North", "கோவை வடக்கு"),
-            (6, 2, "CBS", "Coimbatore South", "கோவை தெற்கு"),
-            # Madurai
-            (7, 3, "MDN", "Madurai North", "மதுரை வடக்கு"),
-            (8, 3, "MDS", "Madurai South", "மதுரை தெற்கு"),
-            # Chengalpattu
-            (9, 5, "TAM", "Tambaram", "தாம்பரம்"),
-            (10, 5, "VND", "Vandalur", "வண்டலூர்"),
         ]
         for t_id, d_id, code, name_en, name_ta in taluks:
             session.add(Taluk(id=t_id, district_id=d_id, code=code, name_en=name_en, name_ta=name_ta))
         await session.commit()
 
-        # Seed Revenue Villages
         villages = [
             (1, 1, "AMB-01", "Ambattur", "அம்பத்தூர்"),
             (2, 1, "KOR-02", "Korattur", "கொரட்டூர்"),
             (3, 2, "MYL-01", "Mylapore", "மயிலாப்பூர்"),
             (4, 2, "ALP-02", "Alwarpet", "ஆழ்வார்பேட்டை"),
             (5, 3, "VEL-01", "Velachery", "வேளச்சேரி"),
-            (6, 4, "GND-01", "Guindy Park", "கிண்டி பூங்கா"),
-            (7, 5, "GND-02", "Ganapathy", "கணபதி"),
-            (8, 6, "RSP-01", "RS Puram", "ஆர்.எஸ். புரம்"),
-            (9, 7, "ANA-01", "Anaiyur", "அணையூர்"),
-            (10, 9, "TAM-01", "Tambaram East", "தாம்பரம் கிழக்கு"),
         ]
         for v_id, t_id, code, name_en, name_ta in villages:
             session.add(RevenueVillage(id=v_id, taluk_id=t_id, code=code, name_en=name_en, name_ta=name_ta))

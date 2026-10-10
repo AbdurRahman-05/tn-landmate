@@ -168,3 +168,29 @@ async def test_live_session_and_fetch(client):
     assert f_data["success"] is False
     assert "CAPTCHA" in f_data["message"]
 
+@pytest.mark.asyncio
+async def test_geography_hierarchy(client):
+    # 1. Fetch all 38 districts
+    d_res = await client.get("/api/v1/districts")
+    assert d_res.status_code == 200
+    districts = d_res.json()
+    assert len(districts) == 38
+    chennai = next(d for d in districts if d["name_en"] == "Chennai")
+    assert chennai["id"] == 1
+    assert chennai["name_ta"] == "சென்னை"
+
+    # 2. Fetch taluks for Chennai
+    t_res = await client.get(f"/api/v1/taluks?district_id={chennai['id']}")
+    assert t_res.status_code == 200
+    taluks = t_res.json()
+    assert len(taluks) >= 4
+    ambattur = next(t for t in taluks if t["name_en"] == "Ambattur")
+    assert ambattur["name_ta"] == "அம்பத்தூர்"
+
+    # 3. Fetch villages for Ambattur
+    v_res = await client.get(f"/api/v1/villages?taluk_id={ambattur['id']}")
+    assert v_res.status_code == 200
+    villages = v_res.json()
+    assert len(villages) >= 1
+    assert any(v["name_en"] == "Ambattur" for v in villages)
+
