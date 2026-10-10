@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/data/tn_geography_data.dart';
 import '../../core/network/api_client.dart';
 import '../../features/calculators/registration_calculator_screen.dart';
 import '../../features/live_portal/live_government_portal_screen.dart';
@@ -48,42 +49,6 @@ class LiveGovExtractorSheet extends StatefulWidget {
 }
 
 class _LiveGovExtractorSheetState extends State<LiveGovExtractorSheet> {
-  final List<Map<String, dynamic>> _districts = [
-    {'id': 1, 'name_en': 'Chennai', 'name_ta': 'சென்னை'},
-    {'id': 2, 'name_en': 'Coimbatore', 'name_ta': 'கோயம்புத்தூர்'},
-    {'id': 3, 'name_en': 'Madurai', 'name_ta': 'மதுரை'},
-    {'id': 4, 'name_en': 'Tiruchirappalli', 'name_ta': 'திருச்சிராப்பள்ளி'},
-    {'id': 5, 'name_en': 'Chengalpattu', 'name_ta': 'செங்கல்பட்டு'},
-  ];
-
-  final Map<int, List<Map<String, dynamic>>> _taluks = {
-    1: [
-      {'id': 1, 'name_en': 'Ambattur', 'name_ta': 'அம்பத்தூர்'},
-      {'id': 2, 'name_en': 'Mylapore', 'name_ta': 'மயிலாப்பூர்'},
-      {'id': 3, 'name_en': 'Velachery', 'name_ta': 'வேளச்சேரி'},
-    ],
-    2: [
-      {'id': 5, 'name_en': 'Coimbatore North', 'name_ta': 'கோவை வடக்கு'},
-      {'id': 6, 'name_en': 'Coimbatore South', 'name_ta': 'கோவை தெற்கு'},
-    ],
-    3: [
-      {'id': 7, 'name_en': 'Madurai North', 'name_ta': 'மதுரை வடக்கு'},
-      {'id': 8, 'name_en': 'Madurai South', 'name_ta': 'மதுரை தெற்கு'},
-    ],
-    5: [
-      {'id': 9, 'name_en': 'Tambaram', 'name_ta': 'தாம்பரம்'},
-      {'id': 10, 'name_en': 'Vandalur', 'name_ta': 'வண்டலூர்'},
-    ]
-  };
-
-  final Map<int, List<Map<String, dynamic>>> _villages = {
-    1: [{'id': 1, 'name_en': 'Ambattur', 'name_ta': 'அம்பத்தூர்'}],
-    2: [{'id': 3, 'name_en': 'Mylapore', 'name_ta': 'மயிலாப்பூர்'}],
-    3: [{'id': 5, 'name_en': 'Velachery', 'name_ta': 'வேளச்சேரி'}],
-    7: [{'id': 9, 'name_en': 'Anaiyur', 'name_ta': 'அணையூர்'}],
-    9: [{'id': 10, 'name_en': 'Tambaram East', 'name_ta': 'தாம்பரம் கிழக்கு'}],
-  };
-
   int? _selectedDistrictId = 1;
   int? _selectedTalukId = 1;
   int? _selectedVillageId = 1;
@@ -115,20 +80,15 @@ class _LiveGovExtractorSheetState extends State<LiveGovExtractorSheet> {
   }
 
   String _getDistrictName() {
-    final match = _districts.where((d) => d['id'] == _selectedDistrictId);
-    return match.isNotEmpty ? match.first['name_en'] : 'Chennai';
+    return TnGeographyData.getDistrictName(_selectedDistrictId);
   }
 
   String _getTalukName() {
-    final list = _taluks[_selectedDistrictId] ?? [];
-    final match = list.where((t) => t['id'] == _selectedTalukId);
-    return match.isNotEmpty ? match.first['name_en'] : 'Ambattur';
+    return TnGeographyData.getTalukName(_selectedDistrictId, _selectedTalukId);
   }
 
   String _getVillageName() {
-    final list = _villages[_selectedTalukId] ?? [];
-    final match = list.where((v) => v['id'] == _selectedVillageId);
-    return match.isNotEmpty ? match.first['name_en'] : 'Ambattur';
+    return TnGeographyData.getVillageName(_selectedTalukId, _selectedVillageId);
   }
 
   Future<void> _fetchSessionAndCaptcha() async {
@@ -236,8 +196,15 @@ class _LiveGovExtractorSheetState extends State<LiveGovExtractorSheet> {
   @override
   Widget build(BuildContext context) {
     final mediaQuery = MediaQuery.of(context);
-    final availableTaluks = _taluks[_selectedDistrictId] ?? [];
-    final availableVillages = _villages[_selectedTalukId] ?? [];
+    final availableDistricts = TnGeographyData.districts;
+    final availableTaluks = TnGeographyData.getTaluksForDistrict(_selectedDistrictId);
+    if (_selectedTalukId != null && !availableTaluks.any((t) => t['id'] == _selectedTalukId)) {
+      _selectedTalukId = availableTaluks.isNotEmpty ? availableTaluks.first['id'] : null;
+    }
+    final availableVillages = TnGeographyData.getVillagesForTaluk(_selectedTalukId);
+    if (_selectedVillageId != null && !availableVillages.any((v) => v['id'] == _selectedVillageId)) {
+      _selectedVillageId = availableVillages.isNotEmpty ? availableVillages.first['id'] : null;
+    }
 
     return Padding(
       padding: EdgeInsets.only(bottom: mediaQuery.viewInsets.bottom),
@@ -321,12 +288,12 @@ class _LiveGovExtractorSheetState extends State<LiveGovExtractorSheet> {
                 const SizedBox(height: 12),
 
                 // District Dropdown
-                _buildDropdown('District / மாவட்டம்', _selectedDistrictId, _districts, (val) {
+                _buildDropdown('District / மாவட்டம்', _selectedDistrictId, availableDistricts, (val) {
                   setState(() {
                     _selectedDistrictId = val;
-                    final talukList = _taluks[val] ?? [];
+                    final talukList = TnGeographyData.getTaluksForDistrict(val);
                     _selectedTalukId = talukList.isNotEmpty ? talukList.first['id'] : null;
-                    final vList = _selectedTalukId != null ? (_villages[_selectedTalukId] ?? []) : [];
+                    final vList = TnGeographyData.getVillagesForTaluk(_selectedTalukId);
                     _selectedVillageId = vList.isNotEmpty ? vList.first['id'] : null;
                   });
                 }),
@@ -336,7 +303,7 @@ class _LiveGovExtractorSheetState extends State<LiveGovExtractorSheet> {
                 _buildDropdown('Taluk / வட்டம்', _selectedTalukId, availableTaluks, (val) {
                   setState(() {
                     _selectedTalukId = val;
-                    final vList = val != null ? (_villages[val] ?? []) : [];
+                    final vList = TnGeographyData.getVillagesForTaluk(val);
                     _selectedVillageId = vList.isNotEmpty ? vList.first['id'] : null;
                   });
                 }),
@@ -491,7 +458,28 @@ class _LiveGovExtractorSheetState extends State<LiveGovExtractorSheet> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.charcoalLight)),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.charcoalLight)),
+            if (items.length > 5)
+              InkWell(
+                onTap: () => _openSearchPicker(label, items, val, onChanged),
+                borderRadius: BorderRadius.circular(4),
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.search, size: 13, color: AppColors.forestGreen),
+                      SizedBox(width: 2),
+                      Text('Search / தேடுக', style: TextStyle(fontSize: 10, color: AppColors.forestGreen, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
         const SizedBox(height: 4),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -504,9 +492,12 @@ class _LiveGovExtractorSheetState extends State<LiveGovExtractorSheet> {
               value: val,
               isExpanded: true,
               items: items.map((d) {
+                final en = d['name_en'] ?? '';
+                final ta = d['name_ta'] ?? '';
+                final text = (ta.isNotEmpty && ta != en) ? '$en ($ta)' : en;
                 return DropdownMenuItem<int>(
                   value: d['id'] as int,
-                  child: Text(d['name_en'] ?? ''),
+                  child: Text(text, overflow: TextOverflow.ellipsis),
                 );
               }).toList(),
               onChanged: onChanged,
@@ -514,6 +505,100 @@ class _LiveGovExtractorSheetState extends State<LiveGovExtractorSheet> {
           ),
         ),
       ],
+    );
+  }
+
+  void _openSearchPicker(String title, List<Map<String, dynamic>> rawList, int? currentValue, ValueChanged<int?> onSelected) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        String query = '';
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            final filtered = rawList.where((item) {
+              if (query.isEmpty) return true;
+              final q = query.toLowerCase();
+              final en = (item['name_en'] ?? '').toString().toLowerCase();
+              final ta = (item['name_ta'] ?? '').toString().toLowerCase();
+              return en.contains(q) || ta.contains(q);
+            }).toList();
+
+            return DraggableScrollableSheet(
+              initialChildSize: 0.75,
+              minChildSize: 0.4,
+              maxChildSize: 0.95,
+              expand: false,
+              builder: (_, scrollController) {
+                return Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.charcoal)),
+                          IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        autofocus: true,
+                        decoration: InputDecoration(
+                          prefixIcon: const Icon(Icons.search, color: AppColors.forestGreen),
+                          hintText: 'Search / தேடுக...',
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        ),
+                        onChanged: (val) {
+                          setModalState(() {
+                            query = val;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      Expanded(
+                        child: filtered.isEmpty
+                            ? const Center(child: Text('No matches found / முடிவுகள் இல்லை'))
+                            : ListView.builder(
+                                controller: scrollController,
+                                itemCount: filtered.length,
+                                itemBuilder: (context, idx) {
+                                  final item = filtered[idx];
+                                  final isSelected = item['id'] == currentValue;
+                                  final en = item['name_en'] ?? '';
+                                  final ta = item['name_ta'] ?? '';
+                                  return ListTile(
+                                    selected: isSelected,
+                                    selectedTileColor: AppColors.forestGreen.withOpacity(0.08),
+                                    title: Text(
+                                      en,
+                                      style: TextStyle(
+                                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                        color: isSelected ? AppColors.forestGreen : AppColors.charcoal,
+                                      ),
+                                    ),
+                                    subtitle: ta.isNotEmpty ? Text(ta, style: const TextStyle(fontSize: 11, color: Colors.grey)) : null,
+                                    trailing: isSelected ? const Icon(Icons.check, color: AppColors.forestGreen) : null,
+                                    onTap: () {
+                                      Navigator.pop(context);
+                                      onSelected(item['id'] as int);
+                                    },
+                                  );
+                                },
+                              ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            );
+          },
+        );
+      },
     );
   }
 
