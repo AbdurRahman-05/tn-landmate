@@ -48,6 +48,7 @@ async def seed_initial_data(session: AsyncSession):
         await session.commit()
     else:
         # Fallback minimum dataset if json not found
+        existing_d_ids = set((await session.execute(select(District.id))).scalars().all())
         tn_districts = [
             (1, "CHN", "Chennai", "சென்னை"),
             (2, "CBE", "Coimbatore", "கோயம்புத்தூர்"),
@@ -56,9 +57,11 @@ async def seed_initial_data(session: AsyncSession):
             (5, "CGL", "Chengalpattu", "செங்கல்பட்டு"),
         ]
         for d_id, code, name_en, name_ta in tn_districts:
-            session.add(District(id=d_id, code=code, name_en=name_en, name_ta=name_ta))
+            if d_id not in existing_d_ids:
+                session.add(District(id=d_id, code=code, name_en=name_en, name_ta=name_ta))
         await session.commit()
 
+        existing_t_ids = set((await session.execute(select(Taluk.id))).scalars().all())
         taluks = [
             (1, 1, "AMB", "Ambattur", "அம்பத்தூர்"),
             (2, 1, "MYL", "Mylapore", "மயிலாப்பூர்"),
@@ -66,9 +69,11 @@ async def seed_initial_data(session: AsyncSession):
             (4, 1, "GND", "Guindy", "கிண்டி"),
         ]
         for t_id, d_id, code, name_en, name_ta in taluks:
-            session.add(Taluk(id=t_id, district_id=d_id, code=code, name_en=name_en, name_ta=name_ta))
+            if t_id not in existing_t_ids:
+                session.add(Taluk(id=t_id, district_id=d_id, code=code, name_en=name_en, name_ta=name_ta))
         await session.commit()
 
+        existing_v_ids = set((await session.execute(select(RevenueVillage.id))).scalars().all())
         villages = [
             (1, 1, "AMB-01", "Ambattur", "அம்பத்தூர்"),
             (2, 1, "KOR-02", "Korattur", "கொரட்டூர்"),
@@ -77,20 +82,23 @@ async def seed_initial_data(session: AsyncSession):
             (5, 3, "VEL-01", "Velachery", "வேளச்சேரி"),
         ]
         for v_id, t_id, code, name_en, name_ta in villages:
-            session.add(RevenueVillage(id=v_id, taluk_id=t_id, code=code, name_en=name_en, name_ta=name_ta))
+            if v_id not in existing_v_ids:
+                session.add(RevenueVillage(id=v_id, taluk_id=t_id, code=code, name_en=name_en, name_ta=name_ta))
         await session.commit()
 
-        # Seed Sub-Registrar Offices
-        sros = [
-            (1, 1, "Chennai Central", "Mylapore SRO", "மயிலாப்பூர் சார்பதிவாளர் அலுவலகம்", "Kutchery Road, Mylapore, Chennai"),
-            (2, 1, "Chennai North", "Ambattur SRO", "அம்பத்தூர் சார்பதிவாளர் அலுவலகம்", "MTH Road, Ambattur, Chennai"),
-            (3, 1, "Chennai South", "Velachery SRO", "வேளச்சேரி சார்பதிவாளர் அலுவலகம்", "100 Feet Bypass Rd, Velachery"),
-            (4, 2, "Coimbatore", "Gandhipuram SRO", "காந்திபுரம் சார்பதிவாளர் அலுவலகம்", "Cross Cut Road, Coimbatore"),
-            (5, 5, "Chengalpattu", "Tambaram SRO", "தாம்பரம் சார்பதிவாளர் அலுவலகம்", "GST Road, Tambaram, Chennai"),
-        ]
-        for s_id, d_id, zone, name_en, name_ta, addr in sros:
+    # Seed Sub-Registrar Offices in both full-JSON and fallback paths so GuidelineValue foreign keys succeed
+    existing_sro_ids = set((await session.execute(select(SubRegistrarOffice.id))).scalars().all())
+    sros = [
+        (1, 1, "Chennai Central", "Mylapore SRO", "மயிலாப்பூர் சார்பதிவாளர் அலுவலகம்", "Kutchery Road, Mylapore, Chennai"),
+        (2, 1, "Chennai North", "Ambattur SRO", "அம்பத்தூர் சார்பதிவாளர் அலுவலகம்", "MTH Road, Ambattur, Chennai"),
+        (3, 1, "Chennai South", "Velachery SRO", "வேளச்சேரி சார்பதிவாளர் அலுவலகம்", "100 Feet Bypass Rd, Velachery"),
+        (4, 2, "Coimbatore", "Gandhipuram SRO", "காந்திபுரம் சார்பதிவாளர் அலுவலகம்", "Cross Cut Road, Coimbatore"),
+        (5, 5, "Chengalpattu", "Tambaram SRO", "தாம்பரம் சார்பதிவாளர் அலுவலகம்", "GST Road, Tambaram, Chennai"),
+    ]
+    for s_id, d_id, zone, name_en, name_ta, addr in sros:
+        if s_id not in existing_sro_ids:
             session.add(SubRegistrarOffice(id=s_id, district_id=d_id, zone=zone, name_en=name_en, name_ta=name_ta, address=addr))
-        await session.commit()
+    await session.commit()
 
     # 2. Seed Calculator Rules
     rule_check = await session.execute(select(CalculatorRule).limit(1))
