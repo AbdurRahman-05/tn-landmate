@@ -1,11 +1,11 @@
 {
-    "name": "tn_landmate",
-    "short_name": "tn_landmate",
+    "name": "TN LandMate",
+    "short_name": "TN LandMate",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#1B4D3E",
+    "theme_color": "#1B4D3E",
+    "description": "Tamil Nadu Land & Property Utilities",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

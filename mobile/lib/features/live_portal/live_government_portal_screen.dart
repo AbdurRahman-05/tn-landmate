@@ -1,11 +1,33 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:printing/printing.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/providers.dart';
+
+/// Official entry points. The TN e-Services portal rejects direct deep links into
+/// `land/...` pages ("INVALID ACCESS TO THE SITE") because every form page needs a
+/// per-session `rno` token that is only issued from the index page.
+class OfficialPortalUrls {
+  static const String eservicesIndex = 'https://eservices.tn.gov.in/eservicesnew/index.html';
+  static const String tnreginet = 'https://tnreginet.gov.in/portal/';
+
+  static String forRecordType(String recordType) {
+    return recordType == 'guideline_value' ? tnreginet : eservicesIndex;
+  }
+
+  /// Rewrites stale deep links (e.g. land/chitta.html) to the portal's entry page.
+  static String normalize(String url) {
+    if (url.contains('eservices.tn.gov.in') && url.contains('/land/')) {
+      return eservicesIndex;
+    }
+    return url;
+  }
+}
 
 class LiveGovernmentPortalScreen extends ConsumerStatefulWidget {
   final String title;
@@ -37,11 +59,59 @@ class _LiveGovernmentPortalScreenState extends ConsumerState<LiveGovernmentPorta
   int _progress = 0;
   bool _supportsWebView = true;
   bool _showAssistant = true;
+  bool _savingPdf = false;
+
+  late final String _startUrl = OfficialPortalUrls.normalize(widget.initialUrl);
+
+  // Android WebView ignores window.print(); route the portal's own Print button to our PDF export.
+  static const String _printHookJs =
+      "window.print = function(){ try { LandMatePrint.postMessage('print'); } catch(e) {} };";
 
   @override
   void initState() {
     super.initState();
     _initWebView();
+  }
+
+  /// Saves exactly what the official portal is currently showing (e.g. the Patta/Chitta
+  /// result page) as a PDF, using the portal's own HTML and styles — no re-rendering.
+  Future<void> _saveCurrentPageAsPdf() async {
+    final controller = _webViewController;
+    if (controller == null || _savingPdf) return;
+    setState(() => _savingPdf = true);
+    try {
+      final raw = await controller.runJavaScriptReturningResult('document.documentElement.outerHTML');
+      String html = raw is String ? raw : raw.toString();
+      // Android returns the string JSON-encoded ("<html>..."); iOS returns it raw.
+      if (html.startsWith('"')) {
+        html = jsonDecode(html) as String;
+      }
+      final baseUrl = await controller.currentUrl();
+      final stamp = DateTime.now().toIso8601String().split('.').first.replaceAll(':', '-');
+      final survey = (widget.surveyNumber ?? '').isNotEmpty
+          ? '_${widget.surveyNumber}${(widget.subdivisionNumber ?? '').isNotEmpty ? '-${widget.subdivisionNumber}' : ''}'
+          : '';
+
+      await Printing.layoutPdf(
+        name: 'TN_eServices${survey}_$stamp',
+        // webview_flutter has no native print API; convertHtml is deprecated but still
+        // supported on Android/iOS and renders the portal's HTML with its own CSS.
+        // ignore: deprecated_member_use
+        onLayout: (format) => Printing.convertHtml(format: format, html: html, baseUrl: baseUrl),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not save this page as PDF: $e'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _savingPdf = false);
+    }
   }
 
   void _initWebView() {
@@ -51,6 +121,10 @@ class _LiveGovernmentPortalScreenState extends ConsumerState<LiveGovernmentPorta
         final controller = WebViewController()
           ..setJavaScriptMode(JavaScriptMode.unrestricted)
           ..setBackgroundColor(Colors.white)
+          ..addJavaScriptChannel(
+            'LandMatePrint',
+            onMessageReceived: (_) => _saveCurrentPageAsPdf(),
+          )
           ..setNavigationDelegate(
             NavigationDelegate(
               onProgress: (int progress) {
@@ -60,6 +134,7 @@ class _LiveGovernmentPortalScreenState extends ConsumerState<LiveGovernmentPorta
                 if (mounted) setState(() => _isLoading = true);
               },
               onPageFinished: (String url) {
+                _webViewController?.runJavaScript(_printHookJs);
                 if (mounted) {
                   setState(() {
                     _isLoading = false;
@@ -72,7 +147,7 @@ class _LiveGovernmentPortalScreenState extends ConsumerState<LiveGovernmentPorta
               },
             ),
           )
-          ..loadRequest(Uri.parse(widget.initialUrl));
+          ..loadRequest(Uri.parse(_startUrl));
         _webViewController = controller;
       } catch (e) {
         _supportsWebView = false;
@@ -84,7 +159,7 @@ class _LiveGovernmentPortalScreenState extends ConsumerState<LiveGovernmentPorta
   }
 
   void _openExternalBrowser() async {
-    final uri = Uri.parse(widget.initialUrl);
+    final uri = Uri.parse(_startUrl);
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
@@ -151,6 +226,18 @@ class _LiveGovernmentPortalScreenState extends ConsumerState<LiveGovernmentPorta
           ],
         ),
         actions: [
+          if (_supportsWebView)
+            IconButton(
+              icon: _savingPdf
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    )
+                  : const Icon(Icons.picture_as_pdf),
+              tooltip: 'Save this page as PDF',
+              onPressed: _savingPdf ? null : _saveCurrentPageAsPdf,
+            ),
           IconButton(
             icon: const Icon(Icons.bookmark_add, color: AppColors.mutedGold),
             tooltip: 'Import into My Properties',
@@ -273,8 +360,8 @@ class _LiveGovernmentPortalScreenState extends ConsumerState<LiveGovernmentPorta
                     ],
                     Text(
                       lang == 'ta'
-                          ? 'வழிமுறை: 1) மாவட்டத்தை தேர்வு செய்க 2) சர்வே எண் உள்ளிடவும் 3) அரசு திரையில் உள்ள 4-எழுத்து கேப்ட்சா (CAPTCHA) தட்டச்சு செய்து சமர்ப்பிக்கவும்.'
-                          : 'Steps: 1) Select Taluk/Village 2) Paste Survey No 3) Solve government CAPTCHA and tap Submit to view live signed record.',
+                          ? 'வழிமுறை: 1) "பட்டா / சிட்டா" இணைப்பைத் தட்டவும் 2) மாவட்டம், வட்டம், கிராமம், சர்வே எண் தேர்வு செய்க 3) கைப்பேசி எண் உள்ளிட்டு OTP பெற்று சமர்ப்பிக்கவும் 4) மேலே உள்ள PDF பொத்தானை அழுத்தி ஆவணத்தைச் சேமிக்கவும்.'
+                          : 'Steps: 1) Tap "View Patta & FMB / Chitta" 2) Select District, Taluk, Village, Survey No 3) Enter your mobile no, get OTP and Submit 4) Tap the PDF icon above to save the official document.',
                       style: const TextStyle(fontSize: 11, color: AppColors.charcoalLight, height: 1.3),
                     ),
                   ],

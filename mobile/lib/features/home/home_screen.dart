@@ -9,7 +9,7 @@ import '../calculators/area_converter_screen.dart';
 import '../calculators/plot_area_screen.dart';
 import '../calculators/registration_calculator_screen.dart';
 import '../land_search/land_search_screen.dart';
-import '../records/patta_chitta_screen.dart';
+import '../live_portal/live_patta_screen.dart';
 import '../records/patta_generator_screen.dart';
 import '../records/ec_generator_screen.dart';
 import '../records/a_register_screen.dart';
@@ -59,13 +59,19 @@ class HomeScreen extends ConsumerWidget {
                     Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.all(8),
+                          width: 44,
+                          height: 44,
                           decoration: BoxDecoration(
-                            color: AppColors.mutedGold.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: AppColors.mutedGold.withOpacity(0.4)),
+                            borderRadius: BorderRadius.circular(11),
+                            border: Border.all(color: AppColors.mutedGold.withOpacity(0.6), width: 1.5),
                           ),
-                          child: const Icon(Icons.terrain, color: AppColors.mutedGold, size: 24),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(9.5),
+                            child: Image.asset(
+                              'assets/images/app_logo.png',
+                              fit: BoxFit.cover,
+                            ),
+                          ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -198,7 +204,8 @@ class HomeScreen extends ConsumerWidget {
                         icon: Icons.description_outlined,
                         title: AppTranslations.get('patta_chitta', lang),
                         color: const Color(0xFF1E5A42),
-                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PattaChittaScreen())),
+                        // Opens the live Patta/Chitta form directly (connected at app start).
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LivePattaScreen())),
                       ),
                       _buildActionCard(
                         context,

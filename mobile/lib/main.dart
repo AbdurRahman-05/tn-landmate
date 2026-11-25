@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/theme/app_theme.dart';
 import 'features/shell_screen.dart';
+import 'shared/widgets/gov_portal_host.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -31,6 +32,8 @@ class TnLandMateApp extends ConsumerWidget {
         Locale('en', 'US'),
         Locale('ta', 'IN'),
       ],
+      // Connects to eservices.tn.gov.in in the background as soon as the app opens.
+      builder: (context, child) => GovPortalHost(child: child ?? const SizedBox.shrink()),
       home: const ShellScreen(),
     );
   }

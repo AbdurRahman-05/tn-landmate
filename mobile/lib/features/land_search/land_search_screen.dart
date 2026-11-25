@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
@@ -11,7 +10,7 @@ import '../../shared/widgets/disclaimer_banner.dart';
 import '../../shared/widgets/official_source_card.dart';
 import '../calculators/registration_calculator_screen.dart';
 import '../live_portal/live_government_portal_screen.dart';
-import '../records/patta_generator_screen.dart';
+import '../live_portal/live_patta_screen.dart';
 import '../../core/services/patta_pdf_service.dart';
 import '../../core/services/ec_pdf_service.dart';
 
@@ -48,7 +47,7 @@ class _LandSearchScreenState extends ConsumerState<LandSearchScreen> {
 
   void _openOfficialPortalWebView({
     String title = 'TN Revenue e-Services (Live Patta)',
-    String initialUrl = 'https://eservices.tn.gov.in/eservicesnew/land/chitta.html?lan=ta',
+    String initialUrl = OfficialPortalUrls.eservicesIndex,
   }) {
     Navigator.push(
       context,
@@ -69,7 +68,6 @@ class _LandSearchScreenState extends ConsumerState<LandSearchScreen> {
   // --- Real-time Live Government Portal Extraction ---
   void _startLiveGovernmentExtraction() async {
     final survey = _surveyCtrl.text.trim();
-    final subdiv = _subdivCtrl.text.trim();
 
     if (survey.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -81,313 +79,19 @@ class _LandSearchScreenState extends ConsumerState<LandSearchScreen> {
       return;
     }
 
-    setState(() {
-      _liveConnecting = true;
-    });
-
-    try {
-      final res = await apiClient.safePost('/land/live/session', data: {
-        'district_id': _selectedDistrictId ?? 1,
-        'taluk_id': _selectedTalukId ?? 1,
-        'village_id': _selectedVillageId ?? 1,
-        'survey_number': survey,
-        'subdivision_number': subdiv.isEmpty ? '1' : subdiv,
-      });
-
-      if (!mounted) return;
-      setState(() {
-        _liveConnecting = false;
-      });
-
-      if (res != null && res.statusCode == 200 && res.data != null) {
-        final sessionData = res.data as Map<String, dynamic>;
-        _showCaptchaDialog(sessionData);
-      } else {
-        _showOfflineFallbackCaptcha();
-      }
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _liveConnecting = false;
-      });
-      _showOfflineFallbackCaptcha();
-    }
-  }
-
-  void _showOfflineFallbackCaptcha() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Backend unreachable or waking up. You can open the official TN portal directly.'),
-        backgroundColor: AppColors.warning,
-        duration: const Duration(seconds: 6),
-        action: SnackBarAction(
-          label: 'Open Portal',
-          textColor: Colors.white,
-          onPressed: () => _openOfficialPortalWebView(),
+    // The TN e-Services portal requires the citizen's mobile number + OTP and blocks our
+    // cloud server, so the official record is fetched on-device behind our own UI.
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => LivePattaScreen(
+          districtName: _getDistrictName(),
+          talukName: _getTalukName(),
+          villageName: _getVillageName(),
+          surveyNumber: survey,
+          subdivisionNumber: _subdivCtrl.text.trim(),
         ),
       ),
-    );
-  }
-
-  void _showCaptchaDialog(Map<String, dynamic> sessionData) {
-    String currentSessionId = sessionData['session_id'] ?? '';
-    String captchaB64 = sessionData['captcha_image_base64'] ?? '';
-    String portalName = sessionData['portal_name'] ?? 'TN Revenue Portal';
-    bool isLivePortal = sessionData['is_live_portal'] ?? false;
-    String challengeMsg = sessionData['challenge_text'] ?? 'Enter CAPTCHA Code';
-
-    final captchaTextCtrl = TextEditingController();
-    bool submitting = false;
-    String? errorMessage;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (modalCtx) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            final lang = ref.watch(languageProvider);
-            final mediaQuery = MediaQuery.of(context);
-
-            return Padding(
-              padding: EdgeInsets.only(bottom: mediaQuery.viewInsets.bottom),
-              child: Container(
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-                ),
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: AppColors.forestGreen.withOpacity(0.12),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(Icons.verified_user, color: AppColors.forestGreen, size: 24),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                AppTranslations.get('live_captcha_title', lang),
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.charcoal),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                isLivePortal ? 'Official TN Revenue e-Services (eservices.tn.gov.in)' : portalName,
-                                style: const TextStyle(fontSize: 11, color: AppColors.forestGreen, fontWeight: FontWeight.w600),
-                              ),
-                            ],
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.close),
-                          onPressed: () => Navigator.pop(modalCtx),
-                        ),
-                      ],
-                    ),
-                    const Divider(height: 24),
-
-                    Text(
-                      AppTranslations.get('live_captcha_desc', lang),
-                      style: const TextStyle(fontSize: 12, color: AppColors.charcoalLight),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // CAPTCHA Image Box with Refresh button
-                    Center(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF8FAFC),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppColors.outline),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (captchaB64.isNotEmpty)
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: Image.memory(
-                                  base64Decode(captchaB64),
-                                  height: 48,
-                                  fit: BoxFit.contain,
-                                  errorBuilder: (_, __, ___) => const Text('CAPTCHA unavailable'),
-                                ),
-                              ),
-                            const SizedBox(width: 14),
-                            IconButton(
-                              icon: const Icon(Icons.refresh, color: AppColors.forestGreen),
-                              tooltip: AppTranslations.get('refresh_captcha', lang),
-                              onPressed: () async {
-                                final refreshRes = await apiClient.safePost('/land/live/session', data: {
-                                  'district_id': _selectedDistrictId ?? 1,
-                                  'taluk_id': _selectedTalukId ?? 1,
-                                  'village_id': _selectedVillageId ?? 1,
-                                  'survey_number': _surveyCtrl.text.trim(),
-                                  'subdivision_number': _subdivCtrl.text.trim(),
-                                });
-                                if (refreshRes != null && refreshRes.statusCode == 200) {
-                                  setModalState(() {
-                                    currentSessionId = refreshRes.data['session_id'];
-                                    captchaB64 = refreshRes.data['captcha_image_base64'];
-                                    errorMessage = null;
-                                  });
-                                }
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Error message if any
-                    if (errorMessage != null) ...[
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFEE2E2),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: const Color(0xFFEF4444)),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.error_outline, color: Color(0xFFDC2626), size: 18),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                errorMessage!,
-                                style: const TextStyle(fontSize: 12, color: Color(0xFF991B1B)),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                    ],
-
-                    // Input Field
-                    TextField(
-                      controller: captchaTextCtrl,
-                      autofocus: true,
-                      textCapitalization: TextCapitalization.characters,
-                      decoration: InputDecoration(
-                        labelText: AppTranslations.get('enter_captcha', lang),
-                        hintText: challengeMsg,
-                        prefixIcon: const Icon(Icons.lock_clock_outlined, color: AppColors.forestGreen),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-
-                    // Submit Action Button
-                    SizedBox(
-                      width: double.infinity,
-                      height: 48,
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.forestGreen,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        icon: submitting
-                            ? const SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                              )
-                            : const Icon(Icons.bolt, color: AppColors.mutedGold),
-                        label: Text(
-                          submitting
-                              ? AppTranslations.get('extracting_from_govt', lang)
-                              : AppTranslations.get('verify_and_fetch', lang),
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        onPressed: submitting
-                            ? null
-                            : () async {
-                                final enteredCode = captchaTextCtrl.text.trim();
-                                if (enteredCode.isEmpty) {
-                                  setModalState(() {
-                                    errorMessage = 'Please enter the verification code.';
-                                  });
-                                  return;
-                                }
-
-                                setModalState(() {
-                                  submitting = true;
-                                  errorMessage = null;
-                                });
-
-                                final fetchRes = await apiClient.safePost('/land/live/fetch', data: {
-                                  'session_id': currentSessionId,
-                                  'captcha_value': enteredCode,
-                                  'district_id': _selectedDistrictId ?? 1,
-                                  'taluk_id': _selectedTalukId ?? 1,
-                                  'village_id': _selectedVillageId ?? 1,
-                                  'survey_number': _surveyCtrl.text.trim(),
-                                  'subdivision_number': _subdivCtrl.text.trim(),
-                                  'district_name': _getDistrictName(),
-                                  'taluk_name': _getTalukName(),
-                                  'village_name': _getVillageName(),
-                                });
-
-                                if (!mounted || !context.mounted) return;
-                                if (fetchRes != null && fetchRes.statusCode == 200) {
-                                  final data = fetchRes.data as Map<String, dynamic>;
-                                  if (data['success'] == true && data['record'] != null) {
-                                    if (modalCtx.mounted) Navigator.pop(modalCtx);
-                                    setState(() {
-                                      _liveResult = data;
-                                      _searchResult = null; // Prioritize live result
-                                    });
-                                    final isLive = data['is_live_portal'] == true;
-                                    ScaffoldMessenger.of(this.context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          isLive
-                                              ? 'Live government record extracted and verified!'
-                                              : 'Bridge demo record loaded. Open Official Portal for live govt copy.',
-                                        ),
-                                        backgroundColor: isLive ? AppColors.forestGreen : AppColors.warning,
-                                        behavior: SnackBarBehavior.floating,
-                                      ),
-                                    );
-                                    return;
-                                  } else {
-                                    setModalState(() {
-                                      submitting = false;
-                                      errorMessage = data['message'] ?? 'Verification failed.';
-                                    });
-                                    return;
-                                  }
-                                }
-
-                                setModalState(() {
-                                  submitting = false;
-                                  errorMessage = 'Error submitting verification. Please retry.';
-                                });
-                              },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
     );
   }
 

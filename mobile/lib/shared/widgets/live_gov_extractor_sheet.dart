@@ -5,6 +5,7 @@ import '../../core/data/tn_geography_data.dart';
 import '../../core/network/api_client.dart';
 import '../../features/calculators/registration_calculator_screen.dart';
 import '../../features/live_portal/live_government_portal_screen.dart';
+import '../../features/live_portal/live_patta_screen.dart';
 import '../../core/services/patta_pdf_service.dart';
 
 class LiveGovExtractorSheet extends StatefulWidget {
@@ -30,7 +31,12 @@ class LiveGovExtractorSheet extends StatefulWidget {
     String defaultSurvey = '104',
     String defaultSubdiv = '2B',
     void Function(Map<String, dynamic> record)? onSaved,
-  }) {
+  }) async {
+    // Patta / Chitta (with FMB): open the live native form directly — no intermediate sheet.
+    if (recordType == 'patta_chitta' || recordType == 'fmb') {
+      await Navigator.push(context, MaterialPageRoute(builder: (_) => const LivePattaScreen()));
+      return;
+    }
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -90,6 +96,49 @@ class _LiveGovExtractorSheetState extends State<LiveGovExtractorSheet> {
 
   String _getVillageName() {
     return TnGeographyData.getVillageName(_selectedTalukId, _selectedVillageId);
+  }
+
+  /// Opens the real TN Government portal inside the app. The portal now requires the
+  /// citizen's mobile number + OTP, so the record must be requested from the user's own
+  /// phone (our server cannot do it, and the Render server is also blocked by the portal).
+  void _openOfficialPortal() {
+    final s = _surveyCtrl.text.trim();
+    if (s.isEmpty) {
+      setState(() => _errorMessage = 'Please enter a Survey Number.');
+      return;
+    }
+    final navigator = Navigator.of(context);
+    navigator.pop();
+
+    // Patta / Chitta (with FMB): native UI, data fetched in the background from the portal.
+    if (widget.recordType == 'patta_chitta' || widget.recordType == 'fmb') {
+      navigator.push(
+        MaterialPageRoute(
+          builder: (_) => LivePattaScreen(
+            districtName: _getDistrictName(),
+            talukName: _getTalukName(),
+            villageName: _getVillageName(),
+            surveyNumber: s,
+            subdivisionNumber: _subdivCtrl.text.trim(),
+          ),
+        ),
+      );
+      return;
+    }
+
+    navigator.push(
+      MaterialPageRoute(
+        builder: (_) => LiveGovernmentPortalScreen(
+          title: widget.title,
+          initialUrl: OfficialPortalUrls.forRecordType(widget.recordType),
+          districtName: _getDistrictName(),
+          talukName: _getTalukName(),
+          villageName: _getVillageName(),
+          surveyNumber: s,
+          subdivisionNumber: _subdivCtrl.text.trim(),
+        ),
+      ),
+    );
   }
 
   Future<void> _fetchSessionAndCaptcha() async {
@@ -352,14 +401,12 @@ class _LiveGovExtractorSheetState extends State<LiveGovExtractorSheet> {
                       backgroundColor: AppColors.forestGreen,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
-                    icon: _loading
-                        ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                        : const Icon(Icons.bolt, color: AppColors.mutedGold),
-                    label: Text(
-                      _loading ? 'Connecting to Portal...' : 'Connect to Govt Portal',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    icon: const Icon(Icons.bolt, color: AppColors.mutedGold),
+                    label: const Text(
+                      'Open Official Govt Portal',
+                      style: TextStyle(fontWeight: FontWeight.bold),
                     ),
-                    onPressed: _loading ? null : _fetchSessionAndCaptcha,
+                    onPressed: _openOfficialPortal,
                   ),
                 ),
               ],
