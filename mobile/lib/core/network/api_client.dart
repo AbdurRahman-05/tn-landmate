@@ -6,15 +6,32 @@ class ApiClient {
   // Live deployed production backend URL on Render
   static const String productionUrl = 'https://tn-landmate-backend.onrender.com/api/v1';
 
+  // Standard Local Development Endpoints
+  static const String localhostUrl = 'http://127.0.0.1:8000/api/v1';
+  static const String androidEmulatorUrl = 'http://10.0.2.2:8000/api/v1';
+  static const String lanWifiUrl = 'http://10.112.85.2:8000/api/v1';
+
   // Can be overridden at build time via --dart-define=API_URL=...
-  static const String _envApiUrl = String.fromEnvironment('API_URL', defaultValue: productionUrl);
+  static const String _envApiUrl = String.fromEnvironment('API_URL', defaultValue: '');
   static String? _overrideUrl;
+
+  /// Determines the smartest default URL based on runtime platform and environment
+  static String get defaultUrl {
+    if (_envApiUrl.isNotEmpty) return _envApiUrl;
+    if (kDebugMode) {
+      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+        return androidEmulatorUrl;
+      }
+      return localhostUrl;
+    }
+    return productionUrl;
+  }
 
   static String get baseUrl {
     if (_overrideUrl != null && _overrideUrl!.isNotEmpty) {
       return _overrideUrl!;
     }
-    return _envApiUrl;
+    return defaultUrl;
   }
 
   late Dio dio;
@@ -38,9 +55,9 @@ class ApiClient {
     dio = Dio(
       BaseOptions(
         baseUrl: baseUrl,
-        connectTimeout: const Duration(seconds: 60),
-        receiveTimeout: const Duration(seconds: 60),
-        sendTimeout: const Duration(seconds: 60),
+        connectTimeout: const Duration(seconds: 12),
+        receiveTimeout: const Duration(seconds: 25),
+        sendTimeout: const Duration(seconds: 15),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -55,7 +72,7 @@ class ApiClient {
     _initDio();
   }
 
-  Future<Response?> safeGet(String path, {Map<String, dynamic>? queryParameters, int maxRetries = 2}) async {
+  Future<Response?> safeGet(String path, {Map<String, dynamic>? queryParameters, int maxRetries = 1}) async {
     int attempts = 0;
     while (attempts <= maxRetries) {
       try {
@@ -64,15 +81,29 @@ class ApiClient {
         attempts++;
         if (attempts > maxRetries) {
           debugPrint('ApiClient safeGet error on $path: $e');
+          // Try fallback to local if current URL failed
+          if (baseUrl != localhostUrl && baseUrl != androidEmulatorUrl) {
+            try {
+              final fallbackBase = (!kIsWeb && defaultTargetPlatform == TargetPlatform.android)
+                  ? androidEmulatorUrl
+                  : localhostUrl;
+              final fallbackDio = Dio(BaseOptions(
+                baseUrl: fallbackBase,
+                connectTimeout: const Duration(seconds: 5),
+                receiveTimeout: const Duration(seconds: 10),
+              ));
+              return await fallbackDio.get(path, queryParameters: queryParameters);
+            } catch (_) {}
+          }
           return null;
         }
-        await Future.delayed(Duration(seconds: attempts * 2));
+        await Future.delayed(Duration(seconds: attempts));
       }
     }
     return null;
   }
 
-  Future<Response?> safePost(String path, {dynamic data, int maxRetries = 2}) async {
+  Future<Response?> safePost(String path, {dynamic data, int maxRetries = 1}) async {
     int attempts = 0;
     while (attempts <= maxRetries) {
       try {
@@ -81,15 +112,29 @@ class ApiClient {
         attempts++;
         if (attempts > maxRetries) {
           debugPrint('ApiClient safePost error on $path: $e');
+          // Try fallback to local if current URL failed
+          if (baseUrl != localhostUrl && baseUrl != androidEmulatorUrl) {
+            try {
+              final fallbackBase = (!kIsWeb && defaultTargetPlatform == TargetPlatform.android)
+                  ? androidEmulatorUrl
+                  : localhostUrl;
+              final fallbackDio = Dio(BaseOptions(
+                baseUrl: fallbackBase,
+                connectTimeout: const Duration(seconds: 5),
+                receiveTimeout: const Duration(seconds: 10),
+              ));
+              return await fallbackDio.post(path, data: data);
+            } catch (_) {}
+          }
           return null;
         }
-        await Future.delayed(Duration(seconds: attempts * 2));
+        await Future.delayed(Duration(seconds: attempts));
       }
     }
     return null;
   }
 
-  /// Explicit health check method to test backend connectivity and wake up Render free instance
+  /// Explicit health check method to test backend connectivity
   Future<Map<String, dynamic>> checkHealth() async {
     try {
       final res = await dio.get('/health');
@@ -98,7 +143,7 @@ class ApiClient {
           'ok': true,
           'statusCode': 200,
           'data': res.data,
-          'message': 'Connected successfully (Backend Online)',
+          'message': 'Connected successfully ($baseUrl Online)',
         };
       }
       return {
@@ -111,12 +156,12 @@ class ApiClient {
           e.type == DioExceptionType.receiveTimeout) {
         return {
           'ok': false,
-          'message': 'Connection timed out. Server may be spinning up from idle state (~50s on Render free tier). Please tap Test again.',
+          'message': 'Connection timed out at $baseUrl. Ensure backend server is running on port 8000.',
         };
       }
       return {
         'ok': false,
-        'message': 'Network error: ${e.message ?? e.type.name}',
+        'message': 'Network error: ${e.message ?? e.type.name} at $baseUrl',
       };
     } catch (e) {
       return {

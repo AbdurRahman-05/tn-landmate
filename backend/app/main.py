@@ -64,6 +64,10 @@ app.include_router(documents_router, prefix=api_v1_prefix)
 app.include_router(ai_router, prefix=api_v1_prefix)
 app.include_router(admin_router, prefix=api_v1_prefix)
 
+@app.get("/health", include_in_schema=False)
+async def health_check():
+    return {"status": "healthy", "service": "TN LandMate Backend"}
+
 @app.get("/", include_in_schema=False)
 async def root():
     return RedirectResponse(url="/docs")

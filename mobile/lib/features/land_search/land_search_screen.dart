@@ -13,6 +13,7 @@ import '../calculators/registration_calculator_screen.dart';
 import '../live_portal/live_government_portal_screen.dart';
 import '../records/patta_generator_screen.dart';
 import '../../core/services/patta_pdf_service.dart';
+import '../../core/services/ec_pdf_service.dart';
 
 class LandSearchScreen extends ConsumerStatefulWidget {
   const LandSearchScreen({Key? key}) : super(key: key);
@@ -832,30 +833,64 @@ class _LandSearchScreenState extends ConsumerState<LandSearchScreen> {
             ],
           ),
           const SizedBox(height: 10),
-          SizedBox(
-            width: double.infinity,
-            height: 44,
-            child: ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.forestGreenDark,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          Row(
+            children: [
+              Expanded(
+                child: SizedBox(
+                  height: 44,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.forestGreenDark,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                    ),
+                    icon: const Icon(Icons.picture_as_pdf, color: AppColors.mutedGold, size: 16),
+                    label: Text(
+                      lang == 'ta' ? 'பட்டா (PDF)' : 'Patta (PDF)',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white),
+                    ),
+                    onPressed: () {
+                      PattaPdfService.previewAndDownload(context, {
+                        ...rec,
+                        'district_name': _getDistrictName(),
+                        'taluk_name': _getTalukName(),
+                        'village_name': _getVillageName(),
+                        'survey_number': _surveyCtrl.text,
+                        'subdivision_number': _subdivCtrl.text,
+                      });
+                    },
+                  ),
+                ),
               ),
-              icon: const Icon(Icons.picture_as_pdf, color: AppColors.mutedGold, size: 18),
-              label: Text(
-                lang == 'ta' ? 'பட்டா நகல் பதிவிறக்கம் (Download PDF)' : 'Download Generated Patta (PDF)',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
+              const SizedBox(width: 8),
+              Expanded(
+                child: SizedBox(
+                  height: 44,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF7B1113),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                    ),
+                    icon: const Icon(Icons.verified_outlined, color: AppColors.mutedGold, size: 16),
+                    label: Text(
+                      lang == 'ta' ? 'வில்லங்கம் (EC)' : 'Download EC',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white),
+                    ),
+                    onPressed: () {
+                      EcPdfService.previewAndDownload(context, {
+                        ...rec,
+                        'district_name': _getDistrictName(),
+                        'taluk_name': _getTalukName(),
+                        'village_name': _getVillageName(),
+                        'survey_number': _surveyCtrl.text,
+                        'subdivision_number': _subdivCtrl.text,
+                      });
+                    },
+                  ),
+                ),
               ),
-              onPressed: () {
-                PattaPdfService.previewAndDownload(context, {
-                  ...rec,
-                  'district_name': _getDistrictName(),
-                  'taluk_name': _getTalukName(),
-                  'village_name': _getVillageName(),
-                  'survey_number': _surveyCtrl.text,
-                  'subdivision_number': _subdivCtrl.text,
-                });
-              },
-            ),
+            ],
           ),
         ],
       ),
@@ -976,30 +1011,64 @@ class _LandSearchScreenState extends ConsumerState<LandSearchScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          SizedBox(
-            width: double.infinity,
-            height: 44,
-            child: OutlinedButton.icon(
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: AppColors.forestGreen, width: 1.5),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          Row(
+            children: [
+              Expanded(
+                child: SizedBox(
+                  height: 44,
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: AppColors.forestGreen, width: 1.5),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                    ),
+                    icon: const Icon(Icons.picture_as_pdf, color: AppColors.forestGreen, size: 16),
+                    label: Text(
+                      lang == 'ta' ? 'பட்டா (PDF)' : 'Patta (PDF)',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.forestGreen),
+                    ),
+                    onPressed: () {
+                      PattaPdfService.previewAndDownload(context, {
+                        ...rec,
+                        'district_name': _getDistrictName(),
+                        'taluk_name': _getTalukName(),
+                        'village_name': _getVillageName(),
+                        'survey_number': _surveyCtrl.text,
+                        'subdivision_number': _subdivCtrl.text,
+                      });
+                    },
+                  ),
+                ),
               ),
-              icon: const Icon(Icons.picture_as_pdf, color: AppColors.forestGreen, size: 18),
-              label: Text(
-                lang == 'ta' ? 'பட்டா நகல் பதிவிறக்கம் (Download PDF)' : 'Download Generated Patta (PDF)',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.forestGreen),
+              const SizedBox(width: 8),
+              Expanded(
+                child: SizedBox(
+                  height: 44,
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Color(0xFF7B1113), width: 1.5),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                    ),
+                    icon: const Icon(Icons.verified_outlined, color: Color(0xFF7B1113), size: 16),
+                    label: Text(
+                      lang == 'ta' ? 'வில்லங்கம் (EC)' : 'Download EC',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF7B1113)),
+                    ),
+                    onPressed: () {
+                      EcPdfService.previewAndDownload(context, {
+                        ...rec,
+                        'district_name': _getDistrictName(),
+                        'taluk_name': _getTalukName(),
+                        'village_name': _getVillageName(),
+                        'survey_number': _surveyCtrl.text,
+                        'subdivision_number': _subdivCtrl.text,
+                      });
+                    },
+                  ),
+                ),
               ),
-              onPressed: () {
-                PattaPdfService.previewAndDownload(context, {
-                  ...rec,
-                  'district_name': _getDistrictName(),
-                  'taluk_name': _getTalukName(),
-                  'village_name': _getVillageName(),
-                  'survey_number': _surveyCtrl.text,
-                  'subdivision_number': _subdivCtrl.text,
-                });
-              },
-            ),
+            ],
           ),
         ],
       ),

@@ -236,18 +236,19 @@ class LiveScraperService:
             except Exception as e:
                 logger.error(f"Error fetching live data from e-services: {e}")
 
-        # Verification for Fallback / Development session
-        expected = session_data.get("expected_code", "")
-        if req.captcha_value.strip().upper() != expected.upper():
-            return LiveFetchResponse(
-                success=False,
-                message="Incorrect CAPTCHA entered. Please enter the characters shown in the image.",
-                is_live_portal=False,
-                source_portal="TN LandMate Government Bridge",
-                fetched_at=now_str,
-                disclaimer="CAPTCHA mismatch.",
-                record=None,
-            )
+        # Verification for Fallback / Development session (only when not live portal)
+        if not session_data.get("is_live"):
+            expected = session_data.get("expected_code", "")
+            if expected and req.captcha_value.strip().upper() != expected.upper():
+                return LiveFetchResponse(
+                    success=False,
+                    message="Incorrect CAPTCHA entered. Please enter the characters shown in the image.",
+                    is_live_portal=False,
+                    source_portal="TN LandMate Government Bridge",
+                    fetched_at=now_str,
+                    disclaimer="CAPTCHA mismatch.",
+                    record=None,
+                )
 
         # Clear used session
         _SESSION_STORE.pop(req.session_id, None)

@@ -60,42 +60,65 @@ class _PattaGeneratorScreenState extends ConsumerState<PattaGeneratorScreen> {
 
   void _loadSampleData() {
     setState(() {
-      _surveyCtrl.text = '104';
-      _subdivCtrl.text = '2B';
-      _pattaNoCtrl.text = '1420';
-      _ownerNameEnCtrl.text = 'R. Selvam';
-      _ownerNameTaCtrl.text = 'ஆர். செல்வம்';
-      _extentCentsCtrl.text = '5.51';
-      _landType = 'நன்செய் (Wet Land)';
+      _selectedDistrictId = 3; // Madurai
+      final talukList = TnGeographyData.getTaluksForDistrict(3);
+      _selectedTalukId = talukList.any((t) => t['id'] == 104)
+          ? 104
+          : (talukList.isNotEmpty ? talukList.first['id'] : null);
+      final villageList = TnGeographyData.getVillagesForTaluk(_selectedTalukId);
+      _selectedVillageId = villageList.isNotEmpty ? villageList.first['id'] : null;
+
+      _surveyCtrl.text = '304';
+      _subdivCtrl.text = '6C';
+      _pattaNoCtrl.text = '1510';
+      _ownerNameEnCtrl.text = 'Mukkaiya Thevar';
+      _ownerNameTaCtrl.text = 'முக்கையாத்தேவர்';
+      _extentCentsCtrl.text = '13.59'; // Produces 0 - 5.50 Ares
+      _landType = 'புன்செய் (Dry Land)';
     });
   }
 
   void _generateAndDownload() {
-    final cents = double.tryParse(_extentCentsCtrl.text.trim()) ?? 5.51;
-    final sqFt = (cents * 435.6).toStringAsFixed(0);
-    final hectares = (cents * 0.00404686).toStringAsFixed(3);
-    final ares = (cents * 0.404686).toStringAsFixed(2);
+    final cents = double.tryParse(_extentCentsCtrl.text.trim()) ?? 13.59;
+    final totalAres = cents * 0.404686;
+    final ha = (totalAres / 100).floor();
+    final remAres = (totalAres % 100).toStringAsFixed(2);
+    final areaStr = '$ha - $remAres';
+
+    final districtNameEn = TnGeographyData.getDistrictName(_selectedDistrictId, 'en');
+    final districtNameTa = TnGeographyData.getDistrictName(_selectedDistrictId, 'ta');
+    final talukNameEn = TnGeographyData.getTalukName(_selectedDistrictId, _selectedTalukId, 'en');
+    final talukNameTa = TnGeographyData.getTalukName(_selectedDistrictId, _selectedTalukId, 'ta');
+    final villageNameEn = TnGeographyData.getVillageName(_selectedTalukId, _selectedVillageId, 'en');
+    final villageNameTa = TnGeographyData.getVillageName(_selectedTalukId, _selectedVillageId, 'ta');
 
     final pattaRecord = {
       'district_id': _selectedDistrictId,
-      'district_name': TnGeographyData.getDistrictName(_selectedDistrictId),
+      'district_name': districtNameEn,
+      'district_name_ta': districtNameTa,
       'taluk_id': _selectedTalukId,
-      'taluk_name': TnGeographyData.getTalukName(_selectedDistrictId, _selectedTalukId),
+      'taluk_name': talukNameEn,
+      'taluk_name_ta': talukNameTa,
       'village_id': _selectedVillageId,
-      'village_name': TnGeographyData.getVillageName(_selectedTalukId, _selectedVillageId),
-      'survey_number': _surveyCtrl.text.trim().isEmpty ? '104' : _surveyCtrl.text.trim(),
-      'subdivision_number': _subdivCtrl.text.trim().isEmpty ? '1' : _subdivCtrl.text.trim(),
-      'patta_number': _pattaNoCtrl.text.trim().isEmpty ? '1420' : _pattaNoCtrl.text.trim(),
-      'owner_name_en': _ownerNameEnCtrl.text.trim().isEmpty ? 'Citizen Title Holder' : _ownerNameEnCtrl.text.trim(),
-      'owner_name_ta': _ownerNameTaCtrl.text.trim().isEmpty ? 'பட்டாதாரர்' : _ownerNameTaCtrl.text.trim(),
+      'village_name': villageNameEn,
+      'village_name_ta': (_selectedDistrictId == 3 && _selectedTalukId == 104)
+          ? '31 அத்திபட்டி'
+          : villageNameTa,
+      'survey_number': _surveyCtrl.text.trim().isEmpty ? '304' : _surveyCtrl.text.trim(),
+      'subdivision_number': _subdivCtrl.text.trim().isEmpty ? '6C' : _subdivCtrl.text.trim(),
+      'patta_number': _pattaNoCtrl.text.trim().isEmpty ? '1510' : _pattaNoCtrl.text.trim(),
+      'owner_name_en': _ownerNameEnCtrl.text.trim().isEmpty ? 'Mukkaiya Thevar' : _ownerNameEnCtrl.text.trim(),
+      'owner_name_ta': _ownerNameTaCtrl.text.trim().isEmpty ? 'முக்கையாத்தேவர்' : _ownerNameTaCtrl.text.trim(),
       'land_type': _landType,
       'extent_cents': cents,
-      'extent_sq_ft': sqFt,
-      'extent_hectares': hectares,
-      'extent_ares': ares,
-      'reference_id': 'TN-REV-${DateTime.now().year}-${DateTime.now().millisecondsSinceEpoch.toString().substring(6)}',
-      'issue_date': DateTime.now().toLocal().toString().split('.')[0],
-      'tax_assessment': '₹ 18.50 / Year',
+      'extent_ha_are': areaStr,
+      'tax_amount': (cents * 0.0155).toStringAsFixed(2),
+      'reference_id': 'P/24/22/122/${_pattaNoCtrl.text.trim().padLeft(5, '0')}/30227',
+      'print_date': '${DateTime.now().day.toString().padLeft(2, '0')}-${DateTime.now().month.toString().padLeft(2, '0')}-${DateTime.now().year}',
+      'officer_name': 'SIVARAM S',
+      'officer_designation': 'Tahsildar',
+      'sign_date': '09/01/2016',
+      'sign_time': '05:00:01:PM',
     };
 
     PattaPdfService.previewAndDownload(context, pattaRecord);

@@ -11,6 +11,7 @@ import '../calculators/registration_calculator_screen.dart';
 import '../land_search/land_search_screen.dart';
 import '../records/patta_chitta_screen.dart';
 import '../records/patta_generator_screen.dart';
+import '../records/ec_generator_screen.dart';
 import '../records/a_register_screen.dart';
 import '../records/fmb_screen.dart';
 import '../guideline/guideline_value_screen.dart';
@@ -205,6 +206,13 @@ class HomeScreen extends ConsumerWidget {
                         title: lang == 'ta' ? 'பட்டா பதிவிறக்கம்' : 'Download Patta PDF',
                         color: const Color(0xFF0D9488),
                         onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PattaGeneratorScreen())),
+                      ),
+                      _buildActionCard(
+                        context,
+                        icon: Icons.verified_outlined,
+                        title: lang == 'ta' ? 'வில்லங்கச் சான்றிதழ்' : 'Download EC (PDF)',
+                        color: const Color(0xFF7B1113),
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const EcGeneratorScreen())),
                       ),
                       _buildActionCard(
                         context,

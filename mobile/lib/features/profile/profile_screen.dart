@@ -59,12 +59,27 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               ),
               style: const TextStyle(fontSize: 12),
             ),
-            const SizedBox(height: 8),
-            TextButton(
-              onPressed: () {
-                ctrl.text = ApiClient.productionUrl;
-              },
-              child: const Text('Reset to Default Render URL', style: TextStyle(fontSize: 11)),
+            Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              children: [
+                ActionChip(
+                  label: const Text('Local PC (127.0.0.1)', style: TextStyle(fontSize: 10)),
+                  onPressed: () => ctrl.text = ApiClient.localhostUrl,
+                ),
+                ActionChip(
+                  label: const Text('Emulator (10.0.2.2)', style: TextStyle(fontSize: 10)),
+                  onPressed: () => ctrl.text = ApiClient.androidEmulatorUrl,
+                ),
+                ActionChip(
+                  label: const Text('Wi-Fi (10.112.85.2)', style: TextStyle(fontSize: 10)),
+                  onPressed: () => ctrl.text = ApiClient.lanWifiUrl,
+                ),
+                ActionChip(
+                  label: const Text('Cloud (Render)', style: TextStyle(fontSize: 10)),
+                  onPressed: () => ctrl.text = ApiClient.productionUrl,
+                ),
+              ],
             ),
           ],
         ),

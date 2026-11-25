@@ -5,6 +5,8 @@ import '../../core/providers.dart';
 import '../../shared/widgets/custom_app_bar.dart';
 import '../../shared/widgets/disclaimer_banner.dart';
 import '../../shared/widgets/official_source_card.dart';
+import '../records/ec_generator_screen.dart';
+import '../records/patta_generator_screen.dart';
 
 class DocumentGuideDetailScreen extends ConsumerWidget {
   final Map<String, dynamic> guide;
@@ -130,6 +132,54 @@ class DocumentGuideDetailScreen extends ConsumerWidget {
             ),
 
             const SizedBox(height: 16),
+
+            if (guide['slug'] == 'encumbrance-certificate') ...[
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF7B1113),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  icon: const Icon(Icons.download_for_offline, color: AppColors.mutedGold),
+                  label: Text(
+                    isTa ? 'வில்லங்கச் சான்றிதழ் PDF பதிவிறக்கம் (Download EC)' : 'Generate & Download Encumbrance (EC) PDF',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
+                  ),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const EcGeneratorScreen()),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 16),
+            ] else if (guide['slug'] == 'patta-chitta') ...[
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.forestGreen,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  icon: const Icon(Icons.download_for_offline, color: AppColors.mutedGold),
+                  label: Text(
+                    isTa ? 'பட்டா நகல் PDF பதிவிறக்கம் (Download Patta)' : 'Generate & Download Patta (PDF)',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
+                  ),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const PattaGeneratorScreen()),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
 
             OfficialSourceCard(
               title: 'Official Verification Portal',
