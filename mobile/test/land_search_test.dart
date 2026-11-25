@@ -36,5 +36,8 @@ void main() {
 
     // Verify Search Records OutlinedButton
     expect(find.byType(OutlinedButton), findsOneWidget);
+
+    // Verify Direct Official Government Portal button
+    expect(find.byIcon(Icons.open_in_browser), findsOneWidget);
   });
 }

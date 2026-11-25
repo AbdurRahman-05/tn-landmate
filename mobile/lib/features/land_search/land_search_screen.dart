@@ -46,6 +46,26 @@ class _LandSearchScreenState extends ConsumerState<LandSearchScreen> {
     return TnGeographyData.getVillageName(_selectedTalukId, _selectedVillageId);
   }
 
+  void _openOfficialPortalWebView({
+    String title = 'TN Revenue e-Services (Live Patta)',
+    String initialUrl = 'https://eservices.tn.gov.in/eservicesnew/land/chitta.html?lan=ta',
+  }) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => LiveGovernmentPortalScreen(
+          title: title,
+          initialUrl: initialUrl,
+          districtName: _getDistrictName(),
+          talukName: _getTalukName(),
+          villageName: _getVillageName(),
+          surveyNumber: _surveyCtrl.text.trim(),
+          subdivisionNumber: _subdivCtrl.text.trim(),
+        ),
+      ),
+    );
+  }
+
   // --- Real-time Live Government Portal Extraction ---
   void _startLiveGovernmentExtraction() async {
     final survey = _surveyCtrl.text.trim();
@@ -74,6 +94,7 @@ class _LandSearchScreenState extends ConsumerState<LandSearchScreen> {
         'subdivision_number': subdiv.isEmpty ? '1' : subdiv,
       });
 
+      if (!mounted) return;
       setState(() {
         _liveConnecting = false;
       });
@@ -82,10 +103,10 @@ class _LandSearchScreenState extends ConsumerState<LandSearchScreen> {
         final sessionData = res.data as Map<String, dynamic>;
         _showCaptchaDialog(sessionData);
       } else {
-        // Fallback session if backend unavailable
         _showOfflineFallbackCaptcha();
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _liveConnecting = false;
       });
@@ -95,9 +116,15 @@ class _LandSearchScreenState extends ConsumerState<LandSearchScreen> {
 
   void _showOfflineFallbackCaptcha() {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Unable to connect to live server. Please check backend connection.'),
+      SnackBar(
+        content: const Text('Backend unreachable or waking up. You can open the official TN portal directly.'),
         backgroundColor: AppColors.warning,
+        duration: const Duration(seconds: 6),
+        action: SnackBarAction(
+          label: 'Open Portal',
+          textColor: Colors.white,
+          onPressed: () => _openOfficialPortalWebView(),
+        ),
       ),
     );
   }
@@ -316,18 +343,24 @@ class _LandSearchScreenState extends ConsumerState<LandSearchScreen> {
                                   'village_name': _getVillageName(),
                                 });
 
+                                if (!mounted || !context.mounted) return;
                                 if (fetchRes != null && fetchRes.statusCode == 200) {
                                   final data = fetchRes.data as Map<String, dynamic>;
                                   if (data['success'] == true && data['record'] != null) {
-                                    Navigator.pop(modalCtx);
+                                    if (modalCtx.mounted) Navigator.pop(modalCtx);
                                     setState(() {
                                       _liveResult = data;
                                       _searchResult = null; // Prioritize live result
                                     });
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Live government record extracted and verified!'),
-                                        backgroundColor: AppColors.forestGreen,
+                                    final isLive = data['is_live_portal'] == true;
+                                    ScaffoldMessenger.of(this.context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          isLive
+                                              ? 'Live government record extracted and verified!'
+                                              : 'Bridge demo record loaded. Open Official Portal for live govt copy.',
+                                        ),
+                                        backgroundColor: isLive ? AppColors.forestGreen : AppColors.warning,
                                         behavior: SnackBarBehavior.floating,
                                       ),
                                     );
@@ -374,6 +407,7 @@ class _LandSearchScreenState extends ConsumerState<LandSearchScreen> {
       'subdivision_number': _subdivCtrl.text.trim(),
     });
 
+    if (!mounted) return;
     if (response != null && response.statusCode == 200) {
       setState(() {
         _searchResult = response.data;
@@ -640,6 +674,19 @@ class _LandSearchScreenState extends ConsumerState<LandSearchScreen> {
                         onPressed: (_liveConnecting || _loading) ? null : _performSearch,
                       ),
                     ),
+                    const SizedBox(height: 6),
+                    Center(
+                      child: TextButton.icon(
+                        icon: const Icon(Icons.open_in_browser, size: 16, color: AppColors.forestGreen),
+                        label: Text(
+                          lang == 'ta'
+                              ? 'தமிழ்நாடு அரசு இணையதளத்தை நேரடியாகத் திற'
+                              : 'Open Official TN Govt Portal Directly (WebView)',
+                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.forestGreen),
+                        ),
+                        onPressed: () => _openOfficialPortalWebView(),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -672,16 +719,20 @@ class _LandSearchScreenState extends ConsumerState<LandSearchScreen> {
     final refNo = liveData['official_reference_number'] ?? 'TN-GOV-LIVE';
     final fetchedAt = liveData['fetched_at'] ?? 'Just now';
     final sourcePortal = liveData['source_portal'] ?? 'eservices.tn.gov.in';
+    final bool isLivePortal = liveData['is_live_portal'] == true;
+    final badgeBg = isLivePortal ? const Color(0xFFDCFCE7) : const Color(0xFFFEF3C7);
+    final badgeBorder = isLivePortal ? const Color(0xFF16A34A) : const Color(0xFFF59E0B);
+    final badgeText = isLivePortal ? const Color(0xFF15803D) : const Color(0xFFB45309);
 
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.forestGreen, width: 2),
+        border: Border.all(color: isLivePortal ? AppColors.forestGreen : AppColors.warning, width: 2),
         boxShadow: [
           BoxShadow(
-            color: AppColors.forestGreen.withOpacity(0.12),
+            color: (isLivePortal ? AppColors.forestGreen : AppColors.warning).withOpacity(0.12),
             blurRadius: 14,
             offset: const Offset(0, 4),
           )
@@ -694,35 +745,42 @@ class _LandSearchScreenState extends ConsumerState<LandSearchScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFDCFCE7),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFF16A34A)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF16A34A),
-                        shape: BoxShape.circle,
+              Flexible(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: badgeBg,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: badgeBorder),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: badgeBorder,
+                          shape: BoxShape.circle,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      AppTranslations.get('live_official_badge', lang),
-                      style: const TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF15803D),
-                        letterSpacing: 0.5,
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: Text(
+                          isLivePortal
+                              ? AppTranslations.get('live_official_badge', lang)
+                              : 'DEMO BRIDGE ESTIMATE (NOT LIVE GOVT)',
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: badgeText,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
               IconButton(
@@ -811,23 +869,7 @@ class _LandSearchScreenState extends ConsumerState<LandSearchScreen> {
                   ),
                   icon: const Icon(Icons.open_in_new, size: 16, color: AppColors.forestGreen),
                   label: const Text('Official Portal', style: TextStyle(fontSize: 12, color: AppColors.forestGreen)),
-                  onPressed: () {
-                    final distName = _getDistrictName();
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => LiveGovernmentPortalScreen(
-                          title: 'TN Revenue e-Services (Live)',
-                          initialUrl: 'https://eservices.tn.gov.in/eservicesnew/land/chitta.html?lan=ta',
-                          districtName: distName,
-                          talukName: _getTalukName(),
-                          villageName: _getVillageName(),
-                          surveyNumber: _surveyCtrl.text,
-                          subdivisionNumber: _subdivCtrl.text,
-                        ),
-                      ),
-                    );
-                  },
+                  onPressed: () => _openOfficialPortalWebView(title: 'TN Revenue e-Services (Live)'),
                 ),
               ),
             ],
@@ -991,23 +1033,7 @@ class _LandSearchScreenState extends ConsumerState<LandSearchScreen> {
               label: Text(
                 lang == 'ta' ? 'அரசு தளத்தில் நேரடி சரிபார்ப்பு (Real-time)' : 'Verify on Live Govt Portal (Real-time)',
               ),
-              onPressed: () {
-                final distName = _getDistrictName();
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => LiveGovernmentPortalScreen(
-                      title: 'TN Revenue e-Services (Live Patta)',
-                      initialUrl: 'https://eservices.tn.gov.in/eservicesnew/land/chitta.html?lan=ta',
-                      districtName: distName,
-                      talukName: _getTalukName(),
-                      villageName: _getVillageName(),
-                      surveyNumber: _surveyCtrl.text,
-                      subdivisionNumber: _subdivCtrl.text,
-                    ),
-                  ),
-                );
-              },
+              onPressed: () => _openOfficialPortalWebView(),
             ),
           ),
           const SizedBox(height: 8),
@@ -1109,23 +1135,10 @@ class _LandSearchScreenState extends ConsumerState<LandSearchScreen> {
             title: 'Verify on TN Revenue e-Services',
             description: 'Input Survey Number ${_surveyCtrl.text} on the official Tamil Nadu portal.',
             url: result['official_verification_url'],
-            onTap: () {
-              final distName = _getDistrictName();
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => LiveGovernmentPortalScreen(
-                    title: 'TN Revenue e-Services (Live)',
-                    initialUrl: result['official_verification_url'],
-                    districtName: distName,
-                    talukName: _getTalukName(),
-                    villageName: _getVillageName(),
-                    surveyNumber: _surveyCtrl.text,
-                    subdivisionNumber: _subdivCtrl.text,
-                  ),
-                ),
-              );
-            },
+            onTap: () => _openOfficialPortalWebView(
+              title: 'TN Revenue e-Services (Live)',
+              initialUrl: result['official_verification_url'],
+            ),
           ),
           const SizedBox(height: 10),
           SizedBox(
@@ -1136,23 +1149,7 @@ class _LandSearchScreenState extends ConsumerState<LandSearchScreen> {
               label: Text(
                 lang == 'ta' ? 'அரசு போர்ட்டலை உடனடியாக திறக்கவும்' : 'Open Live Government Portal Now',
               ),
-              onPressed: () {
-                final distName = _getDistrictName();
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => LiveGovernmentPortalScreen(
-                      title: 'TN Revenue e-Services (Live Patta)',
-                      initialUrl: 'https://eservices.tn.gov.in/eservicesnew/land/chitta.html?lan=ta',
-                      districtName: distName,
-                      talukName: _getTalukName(),
-                      villageName: _getVillageName(),
-                      surveyNumber: _surveyCtrl.text,
-                      subdivisionNumber: _subdivCtrl.text,
-                    ),
-                  ),
-                );
-              },
+              onPressed: () => _openOfficialPortalWebView(),
             ),
           ),
         ],
